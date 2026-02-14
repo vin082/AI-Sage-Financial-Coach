@@ -1,0 +1,31 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.python-version
+
+# Secrets — never commit
+.env
+*.env
+.env.*
+
+# Vector store / embeddings cache
+data/faiss_index/
+*.faiss
+*.pkl
+
+# IDE / OS
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Locks (optional — include uv.lock but not others)
+# uv.lock is kept for reproducibility

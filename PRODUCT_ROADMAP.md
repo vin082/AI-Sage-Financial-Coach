@@ -533,4 +533,71 @@ The current agent has LBG-specific logic hardcoded throughout. An `AgentConfig` 
 
 ---
 
-*Document version: 1.1 · AI Sage Financial Wellbeing Platform · Confidential*
+### FE-5 — Agent Runtime Modernisation: Migrate to `create_agent` (LangChain v1)
+
+> *Identified during: architecture review — "why not use the latest LangChain agent creation API?"*
+
+The current agent uses a manually implemented ReAct loop (`_run_react_loop` in `agent.py`). LangChain v1 introduces `create_agent` with a composable middleware system that maps directly to every custom component already built. This refactor eliminates ~150 lines of bespoke orchestration code and unlocks streaming, human-in-the-loop confirmations, and framework-native checkpointing with no feature regression.
+
+| Enhancement | Description | Current Approach | `create_agent` Equivalent | Priority |
+|---|---|---|---|---|
+| **FE-5.1 Replace ReAct loop** | Remove manual `_run_react_loop` — use `create_agent` with `tools=` parameter | `while True` loop in `agent.py` parsing LLM tool calls | `create_agent(model, tools)` | P0 |
+| **FE-5.2 Guardrails as middleware** | Replace wrapper functions with composable middleware hooks | `_input_guard()`, `_output_guard()` called manually in loop | `@before_agent` (input guard), `@after_model` (output guard + FCA disclaimer) | P0 |
+| **FE-5.3 Life event bypass** | Replace `if life_event: return early` branch with framework-native early exit | Manual `if` branch in `_run_react_loop` | `@before_agent` middleware returning `jump_to: "end"` | P1 |
+| **FE-5.4 Memory via `state_schema`** | Replace `CustomerMemory` JSON persistence with framework-managed checkpointing | Manual JSON read/write to `data/customer_store/` | `state_schema=CustomAgentState` + LangGraph `checkpointer` | P1 |
+| **FE-5.5 Grounding tracking** | Replace manual `session.tool_calls_made.append()` with middleware | List appended inside loop on each tool execution | `@wrap_tool_call` middleware — zero boilerplate | P1 |
+| **FE-5.6 Streaming + Human-in-the-Loop** | Enable token-by-token streaming and mid-conversation confirmation steps | Not supported in current synchronous loop | Native in `create_agent` — streaming via `agent.stream()`, HITL via `interrupt_before=` | P2 |
+
+**Effort estimate:** 3–4 engineering days. No feature regression — all existing tools, guardrails, memory, and FCA compliance logic are preserved; the orchestration layer is replaced, not the business logic.
+
+**Prerequisites:** None — can begin any time after Phase 1 exit gates are met.
+
+**Key migration steps:**
+1. Replace `_run_react_loop` with `create_agent(model, tools)` call
+2. Extract `_input_guard` → `InputGuardMiddleware` decorated with `@before_agent`
+3. Extract `_output_guard` + FCA disclaimer → `OutputGuardMiddleware` decorated with `@after_model`
+4. Extract life event bypass → `LifeEventBypassMiddleware` decorated with `@before_agent`, returning `jump_to: "end"` when triggered
+5. Define `CustomAgentState(AgentState)` with `goals`, `preferences`, `session_summaries` fields
+6. Pass `checkpointer=JsonFileSaver("data/customer_store/")` to `create_agent`
+7. Replace manual `tool_calls_made.append()` with `@wrap_tool_call` middleware
+
+---
+
+### FE-6 — Multi-Agent Architecture
+
+> *Identified during: architecture review — "would a multi-agent approach help at scale?"*
+
+The current single ReAct agent handles all capabilities in one context window. As the platform scales to Phase 3 (execution) and Phase 4 (cross-brand), a multi-agent architecture decouples specialist concerns, enables parallel execution, and isolates compliance boundaries per agent.
+
+**Recommended target architecture (Phase 3+):**
+
+```
+OrchestratorAgent (thin router — classifies intent, dispatches, synthesises)
+    │
+    ├── CoachingAgent       ← current agent (Epic 1 + 2); spending, health, goals
+    ├── DecisionAgent       ← mortgage, debt/savings trade-off, pension modelling
+    ├── ExecutionAgent      ← Epic 3.1 task execution (payments, pot automation)
+    ├── MonitorAgent        ← Epic 2.2 proactive triggers; runs continuously in background
+    └── RMCopilotAgent      ← FE-2 internal RM-facing tool; separate compliance boundary
+             │
+        ─────────────────────────────────────
+        Shared Platform Layer
+        CustomerMemory · CustomerGraph · Transaction Pipeline · Guardrail Middleware
+```
+
+| Enhancement | Description | Phase | Priority |
+|---|---|---|---|
+| **FE-6.1 OrchestratorAgent** | Thin router that classifies incoming intent and dispatches to the correct specialist agent. Synthesises multi-agent responses into a single coherent reply. | Phase 3 | P0 |
+| **FE-6.2 DecisionAgent** | Specialist agent for complex financial modelling: mortgage affordability, debt vs savings trade-off, pension contribution analysis. Runs tools in parallel sub-chains. | Phase 3 | P0 |
+| **FE-6.3 MonitorAgent** | Background agent that continuously monitors account events (salary in, DD risk, overspend threshold) and hands off to CoachingAgent with pre-loaded context when a trigger fires. | Phase 3 | P1 |
+| **FE-6.4 ExecutionAgent** | Isolated agent for task execution (Epic 3.1) with its own stricter guardrail middleware — amount limits, reversibility checks, CASS compliance — separate from the coaching compliance boundary. | Phase 3 | P1 |
+| **FE-6.5 Shared platform layer** | `CustomerMemory`, transaction pipeline and guardrail middleware extracted into a shared library consumed by all agents. No agent owns state — all agents read/write through the shared layer. | Phase 3 | P0 |
+| **FE-6.6 Cross-brand routing** | OrchestratorAgent reads `brand` from JWT claim and routes to brand-isolated agent instance (`LloydsCoachingAgent`, `HalifaxCoachingAgent`). Enables Phase 4 cross-brand with zero code duplication. | Phase 4 | P1 |
+
+**Prerequisites:** FE-5 (`create_agent` refactor) — each specialist agent should be a clean `create_agent` instance with middleware before composition under an orchestrator.
+
+**When to adopt:** Multi-agent adds routing overhead and state-handoff complexity that is not justified for Phase 1/2 single-turn Q&A. Introduce `OrchestratorAgent` + `DecisionAgent` at the start of Phase 3 when execution and parallel tool chains become requirements.
+
+---
+
+*Document version: 1.3 · AI Sage Financial Wellbeing Platform · Confidential*

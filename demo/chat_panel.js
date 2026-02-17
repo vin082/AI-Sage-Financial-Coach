@@ -22,6 +22,20 @@ let isTyping     = false;
 let messageCount = 0;
 let userProfile  = null;   // populated after /session/profile — drives dynamic chips
 
+// ---- Profile cache (localStorage) ----
+const PROFILE_CACHE_KEY = `ai_sage_profile_${CUSTOMER_ID}`;
+
+function loadCachedProfile() {
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveCachedProfile(profile) {
+  try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile)); } catch { /* ignore */ }
+}
+
 // ---- Panel open/close ----
 
 function openChat(prefillText = '') {
@@ -34,8 +48,16 @@ function openChat(prefillText = '') {
 
   // Initialise session if first open
   if (!sessionId) {
+    // Render instantly from cache (no API wait) — returning users see chips immediately
+    const cached = loadCachedProfile();
+    if (cached && cached.conversation_count > 0) {
+      userProfile = cached;
+      renderInitialChips(cached);
+      // No welcome bubble for returning users — they're ready to type
+    }
+
     initSession().then(() => {
-      // showWelcome / onboarding is handled inside initSession → checkOnboarding
+      // showWelcome / onboarding handled inside initSession → checkOnboarding
       if (prefillText) {
         setTimeout(() => sendSuggestion(prefillText), 400);
       }
@@ -94,18 +116,25 @@ async function checkOnboarding() {
     if (res.ok) {
       const profile = await res.json();
       userProfile = profile;
+      saveCachedProfile(profile);   // keep cache fresh for next visit
+
       if (profile.is_first_visit && profile.active_goals.length === 0) {
         showOnboarding();
         return;
       }
-      // Return visit — show memory-aware greeting
-      showWelcome(profile);
+
+      // Return visit — chips already rendered from cache; silently refresh them
+      // with latest data but do NOT show a welcome bubble (user is already typing)
       renderInitialChips(profile);
       return;
     }
   } catch { /* silently fall through to generic welcome */ }
-  showWelcome(null);
-  renderInitialChips(null);
+
+  // First visit fallback (no cache, no API) — show generic welcome
+  if (!userProfile) {
+    showWelcome(null);
+    renderInitialChips(null);
+  }
 }
 
 // ---- Welcome message ----
@@ -202,10 +231,21 @@ function renderInitialChips(profile) {
 
 // Onboarding state
 const ob = {
-  selectedGoals: [],   // array of goal strings
+  // structured goals: [{ key, description, amount, date }]
+  selectedGoals: [],
   customGoal: '',
   selectedStyle: 'balanced',
   selectedTopics: [],
+};
+
+// Map chip key → base description used when building the goal message
+const OB_GOAL_DESCRIPTIONS = {
+  deposit:    'save for a house deposit',
+  emergency:  'build a 3-month emergency fund',
+  debt:       'pay off my credit card debt',
+  holiday:    'save for a family holiday',
+  car:        'save for a new car',
+  retirement: 'retire early',
 };
 
 function showOnboarding() {
@@ -230,18 +270,54 @@ function obSetStep(step) {
   });
 }
 
-// Toggle chip selection
+// Toggle goal chip + expand/collapse inline detail card
+function obToggleGoal(chip) {
+  const key = chip.dataset.key;
+  const isSelected = chip.classList.contains('selected');
+  const card = document.getElementById(`ob-detail-${key}`);
+
+  if (isSelected) {
+    // Deselect — collapse card and remove from state
+    chip.classList.remove('selected');
+    if (card) {
+      card.style.display = 'none';
+      // Clear inputs
+      card.querySelectorAll('input').forEach(i => i.value = '');
+    }
+  } else {
+    // Select — expand card
+    chip.classList.add('selected');
+    if (card) {
+      card.style.display = 'block';
+      // Focus the amount input
+      setTimeout(() => card.querySelector('.ob-amount')?.focus(), 50);
+    }
+  }
+}
+
+// Topic chips (step 3) still use simple toggle — no detail card
 document.addEventListener('click', function (e) {
-  const chip = e.target.closest('.ob-chip');
+  const chip = e.target.closest('#ob-topic-chips .ob-chip');
   if (!chip) return;
   chip.classList.toggle('selected');
 });
 
 function obNext(step) {
   if (step === 1) {
-    // Collect selected goals
-    ob.selectedGoals = [...document.querySelectorAll('#ob-goal-chips .ob-chip.selected')]
-      .map(c => c.dataset.value);
+    // Collect structured goals from selected chips + their detail cards
+    ob.selectedGoals = [];
+    document.querySelectorAll('#ob-goal-chips .ob-chip.selected').forEach(chip => {
+      const key = chip.dataset.key;
+      const card = document.getElementById(`ob-detail-${key}`);
+      const amountInput = card ? card.querySelector('.ob-amount') : null;
+      const dateInput   = card ? card.querySelector('.ob-date')   : null;
+      ob.selectedGoals.push({
+        key,
+        description: OB_GOAL_DESCRIPTIONS[key] || key,
+        amount: amountInput && amountInput.value ? parseFloat(amountInput.value) : null,
+        date:   dateInput   && dateInput.value   ? dateInput.value + '-01'       : null,
+      });
+    });
     ob.customGoal = document.getElementById('ob-goal-custom').value.trim();
     obSetStep(2);
   } else if (step === 2) {
@@ -263,6 +339,22 @@ function obSelectStyle(btn) {
   ob.selectedStyle = btn.dataset.value;
 }
 
+// Build a fully-formed natural language goal message from a structured goal object
+function obBuildGoalMessage(goal) {
+  // goal = { description, amount, date }  e.g. "save for a house deposit", 20000, "2027-06-01"
+  let msg = `I want to ${goal.description}`;
+  if (goal.amount) {
+    msg += ` of £${Number(goal.amount).toLocaleString('en-GB')}`;
+  }
+  if (goal.date) {
+    const d = new Date(goal.date);
+    const month = d.toLocaleString('en-GB', { month: 'long' });
+    const year  = d.getFullYear();
+    msg += ` by ${month} ${year}`;
+  }
+  return msg;  // e.g. "I want to save for a house deposit of £20,000 by June 2027"
+}
+
 async function obFinish() {
   // Collect topics
   ob.selectedTopics = [...document.querySelectorAll('#ob-topic-chips .ob-chip.selected')]
@@ -271,37 +363,37 @@ async function obFinish() {
   hideOnboarding();
   showWelcome();
 
-  // Fire off goal + preference messages to the agent silently
-  const tasks = [];
+  // Build fully-formed goal messages (no chat refinement needed later)
+  const goalMessages = ob.selectedGoals.map(obBuildGoalMessage);
+  if (ob.customGoal) goalMessages.push(ob.customGoal);
 
-  // Save each selected goal
-  const allGoals = [...ob.selectedGoals];
-  if (ob.customGoal) allGoals.push(ob.customGoal);
-
-  for (const goal of allGoals) {
-    tasks.push(silentChat(goal));
+  // Save goals silently in sequence
+  for (const msg of goalMessages) {
+    await silentChat(msg);
   }
 
-  // Save preferences (tone + topics)
+  // Save preferences
   if (ob.selectedStyle !== 'balanced' || ob.selectedTopics.length > 0) {
     let prefMsg = '';
-    if (ob.selectedStyle === 'concise') prefMsg = 'Please keep your answers brief and to the point.';
-    else if (ob.selectedStyle === 'detailed') prefMsg = 'Please give me detailed explanations with examples.';
-    if (ob.selectedTopics.length > 0) {
+    if (ob.selectedStyle === 'concise')  prefMsg = 'Please keep your answers brief and to the point.';
+    if (ob.selectedStyle === 'detailed') prefMsg = 'Please give me detailed explanations with examples.';
+    if (ob.selectedTopics.length > 0)
       prefMsg += (prefMsg ? ' ' : '') + `I am interested in these topics: ${ob.selectedTopics.join(', ')}.`;
-    }
-    if (prefMsg) tasks.push(silentChat(prefMsg));
+    if (prefMsg) await silentChat(prefMsg);
   }
 
-  // Run all saves in sequence (don't flood the UI)
-  for (const task of tasks) {
-    await task;
+  // Build confirmation message showing what was saved with full details
+  let goalSummary = '';
+  if (goalMessages.length > 0) {
+    const lines = ob.selectedGoals.map(g => {
+      let line = `**${g.description.replace(/^[a-z]/, c => c.toUpperCase())}**`;
+      if (g.amount) line += ` — £${Number(g.amount).toLocaleString('en-GB')}`;
+      if (g.date)   { const d = new Date(g.date); line += ` by ${d.toLocaleString('en-GB', {month:'long'})} ${d.getFullYear()}`; }
+      return `• ${line}`;
+    });
+    if (ob.customGoal) lines.push(`• **${ob.customGoal}**`);
+    goalSummary = `\n\nI've saved your goal${goalMessages.length > 1 ? 's' : ''}:\n${lines.join('\n')}`;
   }
-
-  // Show personalised ready message
-  const goalSummary = allGoals.length > 0
-    ? `\n\nI've saved your goal${allGoals.length > 1 ? 's' : ''}: **${allGoals.join('**, **')}**. I'll track your progress and bring these up when relevant.`
-    : '';
   const topicSummary = ob.selectedTopics.length > 0
     ? `\n\nI'll focus on **${ob.selectedTopics.join(', ')}** in my coaching.`
     : '';
@@ -311,10 +403,13 @@ async function obFinish() {
     false, []
   );
 
-  // Update userProfile mock so chips reflect what was just set
+  // Update userProfile so chips immediately reflect what was just set
   if (!userProfile) userProfile = { active_goals: [], preferences: { preferred_topics: [] }, conversation_count: 0 };
-  if (allGoals.length > 0) userProfile.active_goals = allGoals.map((g, i) => ({ goal_id: `GOAL_${i+1}`, description: g }));
+  userProfile.active_goals = ob.selectedGoals.map((g, i) => ({ goal_id: `GOAL_${i+1}`, description: g.description }));
+  if (ob.customGoal) userProfile.active_goals.push({ goal_id: `GOAL_custom`, description: ob.customGoal });
   if (ob.selectedTopics.length > 0) userProfile.preferences.preferred_topics = ob.selectedTopics;
+  userProfile.conversation_count = 1;   // mark as no longer first visit
+  saveCachedProfile(userProfile);        // persist so next open is instant
   renderInitialChips(userProfile);
 }
 

@@ -101,6 +101,75 @@ class CustomerMemory:
         self.goals.append(goal)
         return goal
 
+    def _find_similar_goal(self, description: str) -> "GoalRecord | None":
+        """
+        Return an existing active goal whose topic overlaps significantly
+        with `description`. Uses keyword intersection — no LLM required.
+
+        Overlap threshold: >= 2 meaningful shared words, OR one of a set of
+        known topic keywords matches exactly (house, deposit, emergency, holiday,
+        car, debt, retirement, wedding, mortgage, savings).
+        """
+        TOPIC_KEYWORDS = {
+            "house", "deposit", "emergency", "fund", "holiday", "car",
+            "debt", "retirement", "wedding", "mortgage", "savings",
+            "nursery", "childcare", "baby", "pension", "travel",
+        }
+
+        def _tokens(text: str) -> set[str]:
+            # Lower-case words, strip punctuation, drop short stop-words
+            import re
+            words = re.findall(r"[a-z]+", text.lower())
+            stop = {"i", "a", "to", "for", "my", "the", "and", "or",
+                    "want", "would", "like", "save", "saving", "get",
+                    "by", "end", "of", "in", "up", "build", "pay", "off"}
+            return {w for w in words if w not in stop}
+
+        new_tokens = _tokens(description)
+        new_topics = new_tokens & TOPIC_KEYWORDS
+
+        for goal in self.active_goals:
+            existing_tokens = _tokens(goal.description)
+            existing_topics = existing_tokens & TOPIC_KEYWORDS
+
+            # Topic keyword match (strongest signal)
+            if new_topics & existing_topics:
+                return goal
+
+            # General token overlap fallback (>= 2 shared meaningful words)
+            if len(new_tokens & existing_tokens) >= 2:
+                return goal
+
+        return None
+
+    def add_or_update_goal(
+        self,
+        description: str,
+        target_amount: float | None = None,
+        target_date: str | None = None,
+    ) -> tuple["GoalRecord", bool]:
+        """
+        Upsert a goal:
+        - If a similar active goal already exists → update it with the
+          new (more specific) description/amount/date and return (goal, False).
+        - Otherwise → create a new goal and return (goal, True).
+
+        Returns (goal, was_created).
+        """
+        existing = self._find_similar_goal(description)
+        if existing:
+            # Always take the longer / more specific description
+            if len(description) > len(existing.description):
+                existing.description = description
+            if target_amount is not None:
+                existing.target_amount = target_amount
+            if target_date is not None:
+                existing.target_date = target_date
+            return existing, False
+
+        goal = self.add_goal(description, target_amount, target_date)
+        return goal, True
+
     def update_health_score(self, score: int) -> None:
         self.last_health_score = score
         self.last_health_score_date = date.today().isoformat()

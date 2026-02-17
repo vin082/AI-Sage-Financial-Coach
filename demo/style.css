@@ -527,6 +527,33 @@ body {
 .ob-title  { font-size: 1rem; font-weight: 700; color: var(--green-900); text-align: center; margin: 0; }
 .ob-subtitle { font-size: 0.82rem; color: var(--grey-600); text-align: center; margin: 0; line-height: 1.45; }
 
+/* Goal list — vertical rows (step 1) */
+.ob-goal-list { display: flex; flex-direction: column; gap: 6px; }
+.ob-goal-row  { display: flex; flex-direction: column; }
+
+/* Inline detail card — slides open below the selected chip */
+.ob-detail-card {
+  background: var(--green-50); border: 1.5px solid var(--green-700);
+  border-top: none; border-radius: 0 0 12px 12px;
+  padding: 10px 12px 12px;
+  animation: obSlideDown 0.18s ease;
+}
+@keyframes obSlideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ob-detail-label {
+  font-size: 0.74rem; font-weight: 600;
+  color: var(--green-700); margin-bottom: 8px;
+}
+.ob-detail-inputs { display: flex; gap: 8px; align-items: center; width: 100%; min-width: 0; overflow: hidden; }
+.ob-amount-wrap   { display: flex; align-items: center; gap: 4px; flex: 1 1 0; min-width: 0; }
+.ob-pound         { font-size: 0.9rem; font-weight: 700; color: var(--green-900); flex-shrink: 0; }
+.ob-amount        { flex: 1 1 0; width: 0; min-width: 50px; box-sizing: border-box; -moz-appearance: textfield; }
+.ob-amount::-webkit-outer-spin-button,
+.ob-amount::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ob-date          { flex: 1 1 0; width: 0; min-width: 80px; max-width: 130px; box-sizing: border-box; }
+
 /* Goal / topic chips */
 .ob-chips {
   display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
@@ -536,12 +563,16 @@ body {
   border-radius: 20px; padding: 6px 13px;
   font-size: 0.8rem; color: var(--green-900);
   cursor: pointer; transition: all 0.18s; font-family: inherit;
+  width: 100%; text-align: left;   /* full width in goal list */
 }
+.ob-chips .ob-chip { width: auto; text-align: center; } /* topic chips stay pill-shaped */
 .ob-chip:hover   { border-color: var(--green-700); background: #f0faf5; }
 .ob-chip.selected {
   background: var(--green-700); color: white;
   border-color: var(--green-700); font-weight: 600;
+  border-radius: 12px 12px 0 0;   /* square bottom corners when detail card open */
 }
+.ob-chips .ob-chip.selected { border-radius: 20px; } /* topic chips keep pill shape */
 
 /* Custom goal input */
 .ob-custom-wrap { padding: 0 2px; }

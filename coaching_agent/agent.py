@@ -165,8 +165,13 @@ Epic 2.4 — Persistent Memory & Long-term Analysis:
    get_spending_insights or detect_life_events_tool in the same conversation turn.
 
 7. Whenever the customer explicitly states a financial goal, saving target, or purchase
-   they want to work toward, ALWAYS call save_goal_tool to persist it. Do not ask
-   for confirmation first — save it, then acknowledge it in your response.
+   they want to work toward, call save_goal_tool to persist it.
+   - The tool automatically detects if a similar goal already exists and UPDATES it
+     rather than creating a duplicate. Trust the tool result's "action" field:
+     "created" means a new goal was added; "updated" means an existing goal was refined.
+   - When acknowledging to the customer: if action="updated", say "I've updated your
+     goal" not "I've saved a new goal". If action="created", say "I've saved that goal".
+   - Never create two goals for the same topic (e.g. one vague + one quantified version).
 
 8. If the customer asks "what are my goals?" or "what have I saved up for?", call
    get_my_goals_tool before answering.
@@ -661,9 +666,16 @@ def _make_tools(analyser: TransactionAnalyser, session: SessionMemory, customer_
         target_date: str = "",
     ) -> str:
         """
-        Save a financial goal the customer has just stated.
-        Call this whenever the customer explicitly mentions a savings target,
-        a purchase they're working toward, or a debt they want to clear.
+        Save or update a financial goal the customer has stated.
+
+        IMPORTANT — deduplication rules:
+        - If the customer is REFINING an existing goal (adding an amount or date
+          to something already saved, e.g. "save for a house deposit" already
+          exists and they now say "save £20,000 for a house deposit by June 2027"),
+          this tool will UPDATE the existing goal — not create a duplicate.
+        - Only create a brand-new goal if the topic is genuinely different from
+          all existing goals.
+        - Check the existing_goals list in the tool result to confirm what was done.
 
         Args:
             description: Plain-English description of the goal,
@@ -671,21 +683,25 @@ def _make_tools(analyser: TransactionAnalyser, session: SessionMemory, customer_
             target_amount: Target amount in £ (0 if not stated)
             target_date: Target date as "YYYY-MM-DD" (empty string if not stated)
         """
-        goal = customer_memory.add_goal(
+        goal, was_created = customer_memory.add_or_update_goal(
             description=description,
             target_amount=target_amount if target_amount > 0 else None,
             target_date=target_date if target_date else None,
         )
         save_customer_store(customer_memory)
         session.register_tool_call("save_goal")
-        session.grounded_amounts.add("£0.00")   # sentinel so output guard passes
+        session.grounded_amounts.add("£0.00")
         return json.dumps({
-            "goal_saved": True,
+            "action": "created" if was_created else "updated",
             "goal_id": goal.goal_id,
             "description": goal.description,
             "target_amount": f"£{goal.target_amount:.2f}" if goal.target_amount else "not set",
             "target_date": goal.target_date or "not set",
             "total_active_goals": len(customer_memory.active_goals),
+            "all_active_goals": [
+                {"goal_id": g.goal_id, "description": g.description}
+                for g in customer_memory.active_goals
+            ],
         }, indent=2)
 
     @tool

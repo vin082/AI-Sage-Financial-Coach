@@ -297,18 +297,84 @@
       <div class="ob-card" id="ob-step-1">
         <div class="ob-emoji">🎯</div>
         <h3 class="ob-title">What are you working toward?</h3>
-        <p class="ob-subtitle">I'll keep track of your goals and check in on your progress each session.</p>
-        <div class="ob-chips" id="ob-goal-chips">
-          <button class="ob-chip" data-value="I want to save for a house deposit">🏠 House deposit</button>
-          <button class="ob-chip" data-value="I want to build a 3-month emergency fund">🛡️ Emergency fund</button>
-          <button class="ob-chip" data-value="I want to pay off my credit card debt">💳 Pay off debt</button>
-          <button class="ob-chip" data-value="I want to save for a family holiday">✈️ Family holiday</button>
-          <button class="ob-chip" data-value="I want to save for a new car">🚗 New car</button>
-          <button class="ob-chip" data-value="I want to retire early">⏳ Early retirement</button>
+        <p class="ob-subtitle">Tap a goal, then add a target amount and date — or skip the details for now.</p>
+
+        <!-- Goal chips + inline detail cards -->
+        <div class="ob-goal-list" id="ob-goal-chips">
+
+          <div class="ob-goal-row" data-key="deposit">
+            <button class="ob-chip" data-key="deposit" onclick="obToggleGoal(this)">🏠 House deposit</button>
+            <div class="ob-detail-card" id="ob-detail-deposit" style="display:none;">
+              <div class="ob-detail-label">How much do you need?</div>
+              <div class="ob-detail-inputs">
+                <div class="ob-amount-wrap"><span class="ob-pound">£</span><input class="ob-input ob-amount" type="number" min="0" placeholder="e.g. 20000" /></div>
+                <input class="ob-input ob-date" type="month" title="Target date" />
+              </div>
+            </div>
+          </div>
+
+          <div class="ob-goal-row" data-key="emergency">
+            <button class="ob-chip" data-key="emergency" onclick="obToggleGoal(this)">🛡️ Emergency fund</button>
+            <div class="ob-detail-card" id="ob-detail-emergency" style="display:none;">
+              <div class="ob-detail-label">Target fund size?</div>
+              <div class="ob-detail-inputs">
+                <div class="ob-amount-wrap"><span class="ob-pound">£</span><input class="ob-input ob-amount" type="number" min="0" placeholder="e.g. 6000" /></div>
+                <input class="ob-input ob-date" type="month" title="Target date" />
+              </div>
+            </div>
+          </div>
+
+          <div class="ob-goal-row" data-key="debt">
+            <button class="ob-chip" data-key="debt" onclick="obToggleGoal(this)">💳 Pay off debt</button>
+            <div class="ob-detail-card" id="ob-detail-debt" style="display:none;">
+              <div class="ob-detail-label">How much debt to clear?</div>
+              <div class="ob-detail-inputs">
+                <div class="ob-amount-wrap"><span class="ob-pound">£</span><input class="ob-input ob-amount" type="number" min="0" placeholder="e.g. 3500" /></div>
+                <input class="ob-input ob-date" type="month" title="Target date" />
+              </div>
+            </div>
+          </div>
+
+          <div class="ob-goal-row" data-key="holiday">
+            <button class="ob-chip" data-key="holiday" onclick="obToggleGoal(this)">✈️ Family holiday</button>
+            <div class="ob-detail-card" id="ob-detail-holiday" style="display:none;">
+              <div class="ob-detail-label">Holiday budget?</div>
+              <div class="ob-detail-inputs">
+                <div class="ob-amount-wrap"><span class="ob-pound">£</span><input class="ob-input ob-amount" type="number" min="0" placeholder="e.g. 3000" /></div>
+                <input class="ob-input ob-date" type="month" title="Target date" />
+              </div>
+            </div>
+          </div>
+
+          <div class="ob-goal-row" data-key="car">
+            <button class="ob-chip" data-key="car" onclick="obToggleGoal(this)">🚗 New car</button>
+            <div class="ob-detail-card" id="ob-detail-car" style="display:none;">
+              <div class="ob-detail-label">Budget for the car?</div>
+              <div class="ob-detail-inputs">
+                <div class="ob-amount-wrap"><span class="ob-pound">£</span><input class="ob-input ob-amount" type="number" min="0" placeholder="e.g. 15000" /></div>
+                <input class="ob-input ob-date" type="month" title="Target date" />
+              </div>
+            </div>
+          </div>
+
+          <div class="ob-goal-row" data-key="retirement">
+            <button class="ob-chip" data-key="retirement" onclick="obToggleGoal(this)">⏳ Early retirement</button>
+            <div class="ob-detail-card" id="ob-detail-retirement" style="display:none;">
+              <div class="ob-detail-label">Target retirement pot?</div>
+              <div class="ob-detail-inputs">
+                <div class="ob-amount-wrap"><span class="ob-pound">£</span><input class="ob-input ob-amount" type="number" min="0" placeholder="e.g. 500000" /></div>
+                <input class="ob-input ob-date" type="month" title="Target year" />
+              </div>
+            </div>
+          </div>
+
         </div>
+
+        <!-- Custom goal -->
         <div class="ob-custom-wrap">
-          <input id="ob-goal-custom" class="ob-input" type="text" placeholder="Or type your own goal…" />
+          <input id="ob-goal-custom" class="ob-input" type="text" placeholder="Or describe your own goal…" />
         </div>
+
         <div class="ob-actions">
           <button class="ob-skip" onclick="obSkip(1)">Skip for now</button>
           <button class="ob-next" onclick="obNext(1)">Next →</button>

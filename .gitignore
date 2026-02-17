@@ -20,6 +20,9 @@ data/faiss_index/
 *.faiss
 *.pkl
 
+# Runtime customer memory store (per-user JSON, generated at runtime)
+data/customer_store/
+
 # IDE / OS
 .claude/
 .vscode/

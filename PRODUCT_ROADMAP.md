@@ -462,4 +462,75 @@ Phase 4 ────────────────────────
 
 ---
 
-*Document version: 1.0 · LBG AI Financial Wellbeing Platform · Confidential*
+## Future Enhancements
+
+The following improvements have been identified during MVP development and stakeholder demos. They are candidates for inclusion in Phase 2 and Phase 3 sprints.
+
+---
+
+### FE-1 — Token & Cost Optimisation
+
+> *Identified during: MVP load testing and cost modelling*
+
+Every customer message triggers 1–3 OpenAI API calls. At production scale (e.g. 100k customers × 5 messages/month) unoptimised token usage becomes a significant operating cost. The following improvements should be implemented before Phase 2 GA launch.
+
+| Enhancement | Description | Est. Token Saving | Priority |
+|---|---|---|---|
+| **Conversation history trimming** | Cap `session.get_history()` to last 6 messages instead of full history. Older turns are rarely needed and inflate input token count significantly. | ~40% on long sessions | P0 |
+| **Health score caching** | Financial health score does not change turn-to-turn. Cache the result in `SessionMemory` and only recompute when new transactions arrive. Avoids a full tool call + LLM narration on repeated questions. | ~800 tokens/repeat query | P1 |
+| **Tiered LLM routing** | Route simple queries (spending summary, health score, savings tips) to **GPT-4o-mini** which is 10× cheaper with equivalent narration quality. Reserve GPT-4o for complex multi-tool chains (mortgage + life event + budget in one turn). | ~60% cost reduction on simple queries | P1 |
+| **Tool output summarisation** | Pre-summarise structured JSON tool outputs before sending to LLM. The full `get_spending_insights` JSON is ~600 tokens; a pre-formatted summary is ~150 tokens with no loss of response quality. | ~450 tokens per tool call | P2 |
+| **Prompt compression** | The system prompt is currently ~800 tokens. Use a compressed variant (~400 tokens) for single-turn factual queries where the full instruction set is not needed. | ~400 tokens per simple query | P2 |
+
+**Target:** Reduce average cost per message from ~$0.007 to ~$0.002 before Phase 2 GA (3.5× cost reduction).
+
+---
+
+### FE-2 — RM Copilot Agent
+
+> *Identified during: stakeholder solution design session*
+
+A relationship manager (RM) facing co-pilot that surfaces customer intelligence and personalised product talking points before client meetings. Proposed as a standalone Phase 3 internal agent reusing the existing coaching agent infrastructure.
+
+| Enhancement | Description | Priority |
+|---|---|---|
+| **Pre-meeting brief generator** | Auto-generate a structured customer brief before every RM-client meeting: detected life events, financial snapshot, recommended talking points, risk flags | P0 |
+| **Product propensity scorer** | Deterministic rules engine mapping transaction signals to product triggers (e.g. nursery payments → life cover, income increase → ISA review) | P0 |
+| **Next Best Action (NBA) engine** | One prioritised product action per customer with a suggested conversation opener, confidence score, and FCA compliance label | P1 |
+| **CRM auto-updater** | Write meeting notes and detected signals back to Salesforce after each RM interaction | P1 |
+| **AI Sage signal sharing** | With customer consent, surface life event signals detected by AI Sage (customer-facing) to the RM — creating a joined-up experience where RM arrives knowing what the customer has already discussed with the agent | P2 |
+
+---
+
+### FE-3 — Online Banking Portal Integration
+
+> *Identified during: stakeholder demo feedback — "the agent should live inside the banking app, not as a standalone tool"*
+
+The AI Sage chat experience should be embedded within the existing online and mobile banking journey rather than accessed as a separate product. The HTML demo (`login.html`, `dashboard.html`) built during MVP development is the prototype for this integration.
+
+| Enhancement | Description | Priority |
+|---|---|---|
+| **Embedded chat panel** | Sliding chat panel within the authenticated banking dashboard — no separate login or product discovery needed | P0 |
+| **Proactive nudge banners** | Contextual banners on the dashboard (e.g. "Your income increased — want to review your savings?") that pre-fill the chat with a relevant question | P0 |
+| **Transaction-linked coaching** | Customer taps a transaction in their feed → agent opens pre-loaded with context about that merchant or category | P1 |
+| **Mobile app native integration** | Native iOS/Android chat component replacing the web panel for mobile banking customers | P1 |
+| **Session continuity** | Customer switches from mobile to desktop mid-conversation — session and context preserved seamlessly | P2 |
+
+---
+
+### FE-4 — Agent Reusability & Skills Framework
+
+> *Identified during: architecture review — "is this agent reusable across brands?"*
+
+The current agent has LBG-specific logic hardcoded throughout. An `AgentConfig` abstraction and formal skills manifest are required before Phase 4 cross-brand deployment.
+
+| Enhancement | Description | Priority |
+|---|---|---|
+| **`AgentConfig` dataclass** | Externalise brand name, colour scheme, product catalogue, adviser contact details, FCA firm reference, and guardrail thresholds into a config object. One codebase, multiple brand deployments. | P0 |
+| **Skills manifest (Anthropic format)** | Formalise each agent capability as a declarative skill with `name`, `description`, trigger keywords, required tool sequence, and FCA boundary label. Enables orchestrator-driven tool sequencing without prompt engineering. | P1 |
+| **Skill hot-reload** | Add or update skills without redeploying the agent — read skills manifest at runtime from a config store | P2 |
+| **Multi-brand config store** | Versioned config store (GCS / Firestore) for Lloyds, Halifax, BoS and MBNA configs — brand teams manage their own config without engineering intervention | P2 |
+
+---
+
+*Document version: 1.1 · AI Sage Financial Wellbeing Platform · Confidential*

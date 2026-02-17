@@ -27,6 +27,7 @@ import os
 import re
 import uuid
 from dataclasses import asdict
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
@@ -43,10 +44,14 @@ from coaching_agent.guardrails import (
 )
 from coaching_agent.memory import (
     CustomerMemory,
+    CustomerPreferences,
+    GoalRecord,
     SessionMemory,
+    SessionSummary,
     create_session,
     get_or_create_customer,
     get_session,
+    save_customer_store,
 )
 from coaching_agent.tools.financial_health import compute_health_score
 from coaching_agent.tools.knowledge_base import retrieve_guidance
@@ -132,6 +137,12 @@ Phase 2 — Decision Support:
 - escalate_to_adviser: Build a warm handoff package and connect customer to a human adviser
 - check_product_eligibility: Check indicative eligibility for banking products (guidance only)
 
+Epic 2.4 — Persistent Memory & Long-term Analysis:
+- get_long_term_trends_tool: Analyse spending trends over 3-12 months with YoY comparison
+- save_goal_tool: Save a financial goal the customer has stated — call this whenever they mention a target
+- get_my_goals_tool: Retrieve the customer's previously saved goals
+- set_preference_tool: Update communication preferences (tone, topics, nudge opt-in)
+
 ## TOOL CALLING RULES — FOLLOW THIS ORDER
 
 1. If the customer mentions ANY life event (baby, moving home, new job, marriage,
@@ -152,6 +163,13 @@ Phase 2 — Decision Support:
 
 6. NEVER call build_budget_plan_tool without first retrieving spending data via
    get_spending_insights or detect_life_events_tool in the same conversation turn.
+
+7. Whenever the customer explicitly states a financial goal, saving target, or purchase
+   they want to work toward, ALWAYS call save_goal_tool to persist it. Do not ask
+   for confirmation first — save it, then acknowledge it in your response.
+
+8. If the customer asks "what are my goals?" or "what have I saved up for?", call
+   get_my_goals_tool before answering.
 """
 
 
@@ -170,7 +188,7 @@ _LIFE_EVENT_TRIGGERS = re.compile(
 # LangChain Tool definitions
 # ---------------------------------------------------------------------------
 
-def _make_tools(analyser: TransactionAnalyser, session: SessionMemory):
+def _make_tools(analyser: TransactionAnalyser, session: SessionMemory, customer_memory: CustomerMemory):
     """
     Create tool functions bound to a specific customer's analyser.
     Tools return JSON-serialisable dicts which the LLM narrates.
@@ -609,6 +627,137 @@ def _make_tools(analyser: TransactionAnalyser, session: SessionMemory):
         session.register_tool_call("check_product_eligibility")
         return json.dumps(result, indent=2)
 
+    # ----------------------------------------------------------------
+    # Epic 2.4 — Long-term Trend Analysis
+    # ----------------------------------------------------------------
+
+    @tool
+    def get_long_term_trends_tool(months: int = 12) -> str:
+        """
+        Analyse spending and income trends over a longer period (up to 12 months).
+        Use this when the customer asks about:
+        - How their spending has changed over time
+        - Year-on-year comparisons
+        - Whether their financial situation is improving or declining
+        - Long-term patterns or trajectory
+
+        Args:
+            months: Number of months to analyse (3-12). Default 12.
+        """
+        months = max(3, min(12, months))
+        result = analyser.get_long_term_trends(months=months)
+        session.grounded_amounts.update(extract_grounded_amounts(result))
+        session.register_tool_call("get_long_term_trends")
+        return json.dumps(result, indent=2)
+
+    # ----------------------------------------------------------------
+    # Epic 2.4 — Persistent Memory tools
+    # ----------------------------------------------------------------
+
+    @tool
+    def save_goal_tool(
+        description: str,
+        target_amount: float = 0,
+        target_date: str = "",
+    ) -> str:
+        """
+        Save a financial goal the customer has just stated.
+        Call this whenever the customer explicitly mentions a savings target,
+        a purchase they're working toward, or a debt they want to clear.
+
+        Args:
+            description: Plain-English description of the goal,
+                         e.g. "Save £5,000 for a family holiday by August 2026"
+            target_amount: Target amount in £ (0 if not stated)
+            target_date: Target date as "YYYY-MM-DD" (empty string if not stated)
+        """
+        goal = customer_memory.add_goal(
+            description=description,
+            target_amount=target_amount if target_amount > 0 else None,
+            target_date=target_date if target_date else None,
+        )
+        save_customer_store(customer_memory)
+        session.register_tool_call("save_goal")
+        session.grounded_amounts.add("£0.00")   # sentinel so output guard passes
+        return json.dumps({
+            "goal_saved": True,
+            "goal_id": goal.goal_id,
+            "description": goal.description,
+            "target_amount": f"£{goal.target_amount:.2f}" if goal.target_amount else "not set",
+            "target_date": goal.target_date or "not set",
+            "total_active_goals": len(customer_memory.active_goals),
+        }, indent=2)
+
+    @tool
+    def get_my_goals_tool() -> str:
+        """
+        Retrieve the customer's saved financial goals.
+        Call this when the customer asks about their goals, targets, or
+        wants to check progress on something they mentioned previously.
+        """
+        active = customer_memory.active_goals
+        session.register_tool_call("get_my_goals")
+        session.grounded_amounts.add("£0.00")
+        return json.dumps({
+            "active_goals": [
+                {
+                    "goal_id": g.goal_id,
+                    "description": g.description,
+                    "target_amount": f"£{g.target_amount:.2f}" if g.target_amount else "not set",
+                    "target_date": g.target_date or "not set",
+                    "created_at": g.created_at[:10],
+                    "status": g.status,
+                }
+                for g in active
+            ],
+            "total_active_goals": len(active),
+        }, indent=2)
+
+    @tool
+    def set_preference_tool(
+        preferred_tone: str = "",
+        prefers_examples: bool | None = None,
+        opted_in_nudges: bool | None = None,
+        add_topic: str = "",
+    ) -> str:
+        """
+        Update the customer's communication preferences.
+        Call this when the customer says things like:
+        - "keep it brief" → set preferred_tone="concise"
+        - "give me more detail" → set preferred_tone="detailed"
+        - "show me examples" → set prefers_examples=True
+        - "don't send me nudges" → set opted_in_nudges=False
+        - "I'm interested in mortgages" → set add_topic="mortgage"
+
+        Args:
+            preferred_tone: "concise", "detailed", or "balanced"
+            prefers_examples: True/False
+            opted_in_nudges: True/False — whether to receive proactive tips
+            add_topic: Add a topic of interest to the customer's profile
+        """
+        if preferred_tone in ("concise", "detailed", "balanced"):
+            customer_memory.preferences.preferred_tone = preferred_tone
+        if prefers_examples is not None:
+            customer_memory.preferences.prefers_examples = prefers_examples
+        if opted_in_nudges is not None:
+            customer_memory.preferences.opted_in_nudges = opted_in_nudges
+        if add_topic:
+            if add_topic not in customer_memory.preferences.preferred_topics:
+                customer_memory.preferences.preferred_topics.append(add_topic)
+
+        from datetime import datetime
+        customer_memory.preferences.last_updated = datetime.utcnow().isoformat()
+        save_customer_store(customer_memory)
+        session.register_tool_call("set_preference")
+        session.grounded_amounts.add("£0.00")
+        return json.dumps({
+            "preferences_updated": True,
+            "preferred_tone": customer_memory.preferences.preferred_tone,
+            "prefers_examples": customer_memory.preferences.prefers_examples,
+            "opted_in_nudges": customer_memory.preferences.opted_in_nudges,
+            "preferred_topics": customer_memory.preferences.preferred_topics,
+        }, indent=2)
+
     return [
         get_spending_insights,
         get_financial_health_score,
@@ -622,6 +771,11 @@ def _make_tools(analyser: TransactionAnalyser, session: SessionMemory):
         detect_life_events_tool,
         escalate_to_adviser,
         check_product_eligibility_tool,
+        # Epic 2.4 — Long-term Trends + Persistent Memory
+        get_long_term_trends_tool,
+        save_goal_tool,
+        get_my_goals_tool,
+        set_preference_tool,
     ]
 
 
@@ -674,7 +828,7 @@ class CoachingAgent:
         )
         session_id = str(uuid.uuid4())
         self.session = create_session(session_id, profile.customer_id)
-        self.tools = _make_tools(self.analyser, self.session)
+        self.tools = _make_tools(self.analyser, self.session, self.customer_memory)
         self.tool_map = {t.name: t for t in self.tools}
         self.llm = _get_llm(self.tools)
         # Pre-load customer context into system prompt at session start
@@ -682,9 +836,15 @@ class CoachingAgent:
 
     def _build_system_prompt(self) -> str:
         """
-        Build the system prompt, injecting any pre-detected life events as
-        hard facts so the LLM cannot claim ignorance of transaction evidence.
+        Build the system prompt enriched with:
+          1. Pre-detected life events (transaction evidence)
+          2. Customer's active financial goals
+          3. Communication preferences
+          4. Summaries of previous sessions (context continuity)
         """
+        extra_blocks: list[str] = []
+
+        # --- 1. Pre-detected life events ---
         try:
             report = detect_life_events(
                 customer_id=self.profile.customer_id,
@@ -707,10 +867,64 @@ class CoachingAgent:
                     "\nWhen a customer asks about budgeting for any of the above events, "
                     "acknowledge the detected event first, then call build_budget_plan_tool."
                 )
-                context_block = "\n".join(lines)
-                return SYSTEM_PROMPT + context_block
+                extra_blocks.append("\n".join(lines))
         except Exception:
             pass  # Never let context injection break the agent
+
+        # --- 2. Active financial goals ---
+        try:
+            active_goals = self.customer_memory.active_goals
+            if active_goals:
+                lines = [
+                    "\n\n## CUSTOMER CONTEXT — SAVED FINANCIAL GOALS",
+                    f"This customer has {len(active_goals)} active goal(s) you set together:",
+                ]
+                for g in active_goals:
+                    amount_str = f"  Target: £{g.target_amount:,.2f}" if g.target_amount else ""
+                    date_str = f"  By: {g.target_date}" if g.target_date else ""
+                    lines.append(f"- [{g.goal_id}] {g.description}{amount_str}{date_str}")
+                lines.append(
+                    "\nReference these goals naturally when relevant — e.g. when discussing "
+                    "savings, mention how progress relates to their stated goals."
+                )
+                extra_blocks.append("\n".join(lines))
+        except Exception:
+            pass
+
+        # --- 3. Communication preferences ---
+        try:
+            prefs = self.customer_memory.preferences
+            if prefs.preferred_tone != "balanced" or prefs.preferred_topics:
+                lines = ["\n\n## CUSTOMER CONTEXT — COMMUNICATION PREFERENCES"]
+                if prefs.preferred_tone == "concise":
+                    lines.append("- Preferred tone: CONCISE — keep responses short and to the point.")
+                elif prefs.preferred_tone == "detailed":
+                    lines.append("- Preferred tone: DETAILED — provide thorough explanations.")
+                if not prefs.prefers_examples:
+                    lines.append("- Skip worked examples unless the customer explicitly asks.")
+                if prefs.preferred_topics:
+                    lines.append(f"- Topics of interest: {', '.join(prefs.preferred_topics)}")
+                extra_blocks.append("\n".join(lines))
+        except Exception:
+            pass
+
+        # --- 4. Previous session summaries (context continuity) ---
+        try:
+            prev_sessions = self.customer_memory.previous_sessions
+            if prev_sessions:
+                lines = [
+                    "\n\n## CUSTOMER CONTEXT — PREVIOUS SESSIONS",
+                    f"You have spoken with this customer {self.customer_memory.conversation_count} time(s) before.",
+                    "Key points from past conversations (most recent last):\n",
+                ]
+                for s in prev_sessions[-3:]:   # inject last 3 only (token budget)
+                    lines.append(f"- [{s.date[:10]}] {s.summary}")
+                extra_blocks.append("\n".join(lines))
+        except Exception:
+            pass
+
+        if extra_blocks:
+            return SYSTEM_PROMPT + "".join(extra_blocks)
         return SYSTEM_PROMPT
 
     def _handle_life_event_query(self, user_message: str, messages: list) -> str | None:
@@ -832,6 +1046,11 @@ Customer's message: {user_message}"""
 
         # ---- 6. Store response in session ----
         self.session.add_message("assistant", final_text)
+
+        # ---- 7. Auto-save customer memory (goals/preferences already persisted
+        #         by their respective tools; this catches health score updates) ----
+        save_customer_store(self.customer_memory)
+
         return final_text
 
     def _run_react_loop(self, messages: list) -> str:
@@ -877,3 +1096,62 @@ Customer's message: {user_message}"""
             "Give me a brief monthly money summary — key highlights from my spending "
             "and one actionable tip I can use this month."
         )
+
+    def _summarise_and_save_session(self) -> None:
+        """
+        Generate a 2-3 sentence summary of the current session using the LLM,
+        then persist it to the customer store.  Called by end_session().
+
+        Token cost: ~150-200 tokens — only fired once per session at close.
+        """
+        if len(self.session.messages) < 2:
+            return   # Nothing meaningful to summarise
+
+        # Build a compact transcript (user + assistant turns only, last 10)
+        transcript_lines = []
+        for msg in self.session.messages[-10:]:
+            role = "Customer" if msg["role"] == "user" else "Coach"
+            # Truncate very long messages to keep the summary prompt short
+            content = msg["content"][:400] + "…" if len(msg["content"]) > 400 else msg["content"]
+            transcript_lines.append(f"{role}: {content}")
+        transcript = "\n".join(transcript_lines)
+
+        topics = list({tc for tc in self.session.tool_calls_made
+                       if tc not in ("save_goal", "set_preference", "get_my_goals")})
+        goals_set = [g.description for g in self.customer_memory.goals
+                     if g.goal_id not in {
+                         g2.goal_id for g2 in self.customer_memory.goals
+                         if g2.status != "active"
+                     }]
+
+        summary_prompt = (
+            "You are a session summariser for AI Sage Financial Coach. "
+            "In 2-3 sentences, summarise what was discussed and any key outcomes "
+            "(goals set, advice given, actions recommended). Be factual and brief.\n\n"
+            f"SESSION TRANSCRIPT:\n{transcript}"
+        )
+
+        try:
+            base_llm = _get_base_llm()
+            response = base_llm.invoke([HumanMessage(content=summary_prompt)])
+            summary_text = (response.content or "").strip()
+            if summary_text:
+                session_summary = SessionSummary(
+                    session_id=self.session.session_id,
+                    date=datetime.utcnow().isoformat(),
+                    summary=summary_text,
+                    topics_covered=topics,
+                    goals_set=[g.description for g in self.customer_memory.active_goals],
+                )
+                self.customer_memory.add_session_summary(session_summary)
+                save_customer_store(self.customer_memory)
+                print(f"[MEMORY] Session summary saved for {self.profile.customer_id}")
+        except Exception as e:
+            print(f"[MEMORY] Session summarisation failed: {e}")
+
+    def end_session(self) -> None:
+        """
+        Call when the customer session ends (e.g. user closes chat window).
+        Generates a session summary and persists it for future context continuity.
+        """
+        self._summarise_and_save_session()

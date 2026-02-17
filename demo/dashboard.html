@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Sage — My Accounts</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== TOP NAV ===== -->
+  <nav class="top-nav">
+    <a class="nav-brand" href="dashboard.html">
+      <div class="logo-icon">🏦</div>
+      <span class="logo-text">Welcome to Online Banking</span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#" class="active">My Accounts</a></li>
+      <li><a href="#">Payments</a></li>
+      <li><a href="#">Cards</a></li>
+      <li><a href="#">Savings</a></li>
+      <li><a href="#">Help</a></li>
+    </ul>
+
+    <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-avatar">AJ</div>
+        <span>Alex Johnson</span>
+      </div>
+      <a href="login.html" class="nav-logout">Log out</a>
+    </div>
+  </nav>
+
+  <!-- ===== PAGE CONTENT ===== -->
+  <div class="page-wrapper">
+
+    <!-- Welcome banner -->
+    <div class="welcome-banner">
+      <div>
+        <h1>Good morning, Alex 👋</h1>
+        <p>Here's a snapshot of your finances. Last login: Today, 08:42</p>
+      </div>
+      <div class="welcome-badge">🔒 Secure session active</div>
+    </div>
+
+    <!-- AI Sage nudge notification -->
+    <div class="notification-bar">
+      <span class="notif-icon">💡</span>
+      <div>
+        <strong>AI Sage has spotted something.</strong>
+        It looks like your income increased recently — great news! There may be an opportunity to boost your savings.
+      </div>
+      <button class="notif-cta" onclick="openChat('')">
+        Ask AI Sage
+      </button>
+    </div>
+
+    <!-- Account cards -->
+    <div class="accounts-grid">
+      <div class="account-card">
+        <div class="account-card-label">Current Account</div>
+        <div class="account-card-name">Everyday Current Account</div>
+        <div class="account-card-balance">£7,639.05</div>
+        <div class="account-card-sub">Available balance</div>
+        <div class="account-card-number">•••• •••• 4821</div>
+      </div>
+
+      <div class="account-card savings">
+        <div class="account-card-label">Savings Account</div>
+        <div class="account-card-name">Instant Access Saver</div>
+        <div class="account-card-balance">£3,250.00</div>
+        <div class="account-card-sub">4.75% AER variable</div>
+        <div class="account-card-number">•••• •••• 9034</div>
+      </div>
+
+      <div class="account-card credit">
+        <div class="account-card-label">Credit Card</div>
+        <div class="account-card-name">Platinum Rewards Card</div>
+        <div class="account-card-balance">£842.17</div>
+        <div class="account-card-sub">Balance outstanding · Limit £5,000</div>
+        <div class="account-card-number">•••• •••• •••• 7712</div>
+      </div>
+    </div>
+
+    <!-- Main two-column grid -->
+    <div class="main-grid">
+
+      <!-- Left: Recent transactions -->
+      <div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <h2>Recent Transactions</h2>
+            <a href="#">View all</a>
+          </div>
+          <div class="txn-list">
+
+            <div class="txn-item">
+              <div class="txn-icon salary">💰</div>
+              <div class="txn-details">
+                <div class="txn-merchant">AI Sage Payroll — Employer Ltd</div>
+                <div class="txn-date">Today · Salary credit</div>
+              </div>
+              <div class="txn-amount credit">+£3,800.00</div>
+            </div>
+
+            <div class="txn-item">
+              <div class="txn-icon nursery">🍼</div>
+              <div class="txn-details">
+                <div class="txn-merchant">Busy Bees Nursery</div>
+                <div class="txn-date">10 Feb · Direct Debit</div>
+              </div>
+              <div class="txn-amount debit">−£850.00</div>
+            </div>
+
+            <div class="txn-item">
+              <div class="txn-icon groceries">🛒</div>
+              <div class="txn-details">
+                <div class="txn-merchant">Sainsbury's</div>
+                <div class="txn-date">9 Feb · Card payment</div>
+              </div>
+              <div class="txn-amount debit">−£94.32</div>
+            </div>
+
+            <div class="txn-item">
+              <div class="txn-icon transport">🚂</div>
+              <div class="txn-details">
+                <div class="txn-merchant">National Rail</div>
+                <div class="txn-date">8 Feb · Card payment</div>
+              </div>
+              <div class="txn-amount debit">−£42.60</div>
+            </div>
+
+            <div class="txn-item">
+              <div class="txn-icon utility">💡</div>
+              <div class="txn-details">
+                <div class="txn-merchant">British Gas</div>
+                <div class="txn-date">7 Feb · Direct Debit</div>
+              </div>
+              <div class="txn-amount debit">−£87.00</div>
+            </div>
+
+            <div class="txn-item">
+              <div class="txn-icon eating">🍜</div>
+              <div class="txn-details">
+                <div class="txn-merchant">Deliveroo</div>
+                <div class="txn-date">7 Feb · Card payment</div>
+              </div>
+              <div class="txn-amount debit">−£28.45</div>
+            </div>
+
+            <div class="txn-item">
+              <div class="txn-icon shopping">🛍️</div>
+              <div class="txn-details">
+                <div class="txn-merchant">Mamas and Papas</div>
+                <div class="txn-date">4 Feb · Card payment</div>
+              </div>
+              <div class="txn-amount debit">−£649.00</div>
+            </div>
+
+            <div class="txn-item">
+              <div class="txn-icon groceries">🛒</div>
+              <div class="txn-details">
+                <div class="txn-merchant">Tesco</div>
+                <div class="txn-date">3 Feb · Card payment</div>
+              </div>
+              <div class="txn-amount debit">−£67.18</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="card">
+          <div class="card-header"><h2>Quick Actions</h2></div>
+          <div class="quick-actions">
+            <a href="#" class="qa-btn"><span class="qa-icon">💸</span>Pay someone</a>
+            <a href="#" class="qa-btn"><span class="qa-icon">🔁</span>Transfer</a>
+            <a href="#" class="qa-btn"><span class="qa-icon">📄</span>Statements</a>
+            <a href="#" class="qa-btn"><span class="qa-icon">💳</span>Manage card</a>
+            <a href="#" class="qa-btn"><span class="qa-icon">🏠</span>Mortgage</a>
+            <button class="qa-btn" onclick="openChat('')"><span class="qa-icon">🤖</span>Ask AI Sage</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Sidebar cards -->
+      <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- Financial Health Score -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Financial Health</h2>
+            <a href="#" onclick="openChat('What is my financial health score?'); return false;">View details</a>
+          </div>
+          <div class="health-mini">
+            <div class="health-score-circle">
+              <span class="health-score-num">74</span>
+            </div>
+            <div class="health-info">
+              <h3>Good — Grade B</h3>
+              <p>Your savings rate has improved this month. Consider building your emergency fund further.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming payments -->
+        <div class="card">
+          <div class="card-header"><h2>Upcoming Payments</h2></div>
+          <div class="txn-list">
+            <div class="txn-item">
+              <div class="txn-icon nursery">🍼</div>
+              <div class="txn-details">
+                <div class="txn-merchant">Busy Bees Nursery</div>
+                <div class="txn-date">Due 10 Mar · DD</div>
+              </div>
+              <div class="txn-amount debit">£850.00</div>
+            </div>
+            <div class="txn-item">
+              <div class="txn-icon utility">💡</div>
+              <div class="txn-details">
+                <div class="txn-merchant">British Gas</div>
+                <div class="txn-date">Due 7 Mar · DD</div>
+              </div>
+              <div class="txn-amount debit">£87.00</div>
+            </div>
+            <div class="txn-item">
+              <div class="txn-icon shopping">📺</div>
+              <div class="txn-details">
+                <div class="txn-merchant">Netflix</div>
+                <div class="txn-date">Due 15 Mar · DD</div>
+              </div>
+              <div class="txn-amount debit">£10.99</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Sage promo card -->
+        <div class="card" style="background: linear-gradient(135deg, #024731, #006A4E); color: white; border: none;">
+          <div style="padding: 20px;">
+            <div style="font-size: 1.8rem; margin-bottom: 10px;">🤖</div>
+            <h3 style="font-size:1rem; margin-bottom:8px; color:white;">Your AI Financial Coach</h3>
+            <p style="font-size:0.82rem; opacity:0.85; line-height:1.5; margin-bottom:16px;">
+              Ask me about your spending, savings goals, or what to do with your recent pay rise. I'm here 24/7.
+            </p>
+            <button onclick="openChat('')" style="
+              background: #C8A951; color: #024731;
+              border: none; border-radius: 20px;
+              padding: 8px 20px; font-size: 0.85rem;
+              font-weight: 700; cursor: pointer;
+              width: 100%;
+            ">
+              Chat with AI Sage ✨
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AI SAGE FLOATING BUTTON ===== -->
+  <button id="ai-sage-btn" onclick="openChat('')" title="Chat with AI Sage">
+    🤖
+    <span class="btn-badge">3</span>
+  </button>
+  <div id="ai-sage-tooltip">Chat with AI Sage</div>
+
+  <!-- ===== CHAT OVERLAY ===== -->
+  <div id="chat-overlay" onclick="closeChat()"></div>
+
+  <!-- ===== CHAT PANEL ===== -->
+  <div id="chat-panel">
+
+    <div class="chat-panel-header">
+      <div class="chat-panel-avatar">🤖</div>
+      <div class="chat-panel-info">
+        <h3>AI Sage Financial Coach</h3>
+        <p><span class="chat-status-dot"></span>Online · Powered by your transaction data</p>
+      </div>
+      <button class="chat-close-btn" onclick="closeChat()">✕</button>
+    </div>
+
+    <!-- ===== ONBOARDING FLOW ===== -->
+    <div id="onboarding-panel" style="display:none;">
+
+      <!-- Step indicator -->
+      <div class="ob-steps">
+        <div class="ob-step active" id="ob-dot-1"></div>
+        <div class="ob-step-line"></div>
+        <div class="ob-step" id="ob-dot-2"></div>
+        <div class="ob-step-line"></div>
+        <div class="ob-step" id="ob-dot-3"></div>
+      </div>
+
+      <!-- Step 1: Goals -->
+      <div class="ob-card" id="ob-step-1">
+        <div class="ob-emoji">🎯</div>
+        <h3 class="ob-title">What are you working toward?</h3>
+        <p class="ob-subtitle">I'll keep track of your goals and check in on your progress each session.</p>
+        <div class="ob-chips" id="ob-goal-chips">
+          <button class="ob-chip" data-value="I want to save for a house deposit">🏠 House deposit</button>
+          <button class="ob-chip" data-value="I want to build a 3-month emergency fund">🛡️ Emergency fund</button>
+          <button class="ob-chip" data-value="I want to pay off my credit card debt">💳 Pay off debt</button>
+          <button class="ob-chip" data-value="I want to save for a family holiday">✈️ Family holiday</button>
+          <button class="ob-chip" data-value="I want to save for a new car">🚗 New car</button>
+          <button class="ob-chip" data-value="I want to retire early">⏳ Early retirement</button>
+        </div>
+        <div class="ob-custom-wrap">
+          <input id="ob-goal-custom" class="ob-input" type="text" placeholder="Or type your own goal…" />
+        </div>
+        <div class="ob-actions">
+          <button class="ob-skip" onclick="obSkip(1)">Skip for now</button>
+          <button class="ob-next" onclick="obNext(1)">Next →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Coaching style -->
+      <div class="ob-card" id="ob-step-2" style="display:none;">
+        <div class="ob-emoji">💬</div>
+        <h3 class="ob-title">How do you like to be coached?</h3>
+        <p class="ob-subtitle">I'll adjust how I explain things to match your style.</p>
+        <div class="ob-style-options">
+          <button class="ob-style-btn" data-value="concise" onclick="obSelectStyle(this)">
+            <span class="ob-style-icon">⚡</span>
+            <strong>Brief & direct</strong>
+            <span>Short answers, key numbers only</span>
+          </button>
+          <button class="ob-style-btn selected" data-value="balanced" onclick="obSelectStyle(this)">
+            <span class="ob-style-icon">⚖️</span>
+            <strong>Balanced</strong>
+            <span>Clear explanations with context</span>
+          </button>
+          <button class="ob-style-btn" data-value="detailed" onclick="obSelectStyle(this)">
+            <span class="ob-style-icon">📚</span>
+            <strong>Detailed</strong>
+            <span>Full breakdowns with examples</span>
+          </button>
+        </div>
+        <div class="ob-actions">
+          <button class="ob-back" onclick="obBack(2)">← Back</button>
+          <button class="ob-next" onclick="obNext(2)">Next →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Topics of interest -->
+      <div class="ob-card" id="ob-step-3" style="display:none;">
+        <div class="ob-emoji">📌</div>
+        <h3 class="ob-title">What topics matter most to you?</h3>
+        <p class="ob-subtitle">I'll prioritise these in my coaching and proactive tips.</p>
+        <div class="ob-chips" id="ob-topic-chips">
+          <button class="ob-chip" data-value="mortgage">🏡 Mortgage</button>
+          <button class="ob-chip" data-value="savings">💰 Savings</button>
+          <button class="ob-chip" data-value="budgeting">📊 Budgeting</button>
+          <button class="ob-chip" data-value="debt">💳 Debt</button>
+          <button class="ob-chip" data-value="investing">📈 Investing</button>
+          <button class="ob-chip" data-value="family finances">👨‍👩‍👧 Family finances</button>
+          <button class="ob-chip" data-value="retirement">🏖️ Retirement</button>
+          <button class="ob-chip" data-value="tax">🧾 Tax</button>
+        </div>
+        <div class="ob-actions">
+          <button class="ob-back" onclick="obBack(3)">← Back</button>
+          <button class="ob-finish" onclick="obFinish()">Start coaching ✨</button>
+        </div>
+      </div>
+
+    </div>
+    <!-- ===== END ONBOARDING ===== -->
+
+    <div class="chat-messages" id="chat-messages">
+      <!-- Populated by chat_panel.js -->
+    </div>
+
+    <div class="chat-suggestions" id="chat-suggestions">
+      <button class="suggestion-chip" onclick="sendSuggestion('How much am I spending each month?')">Monthly spending</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('What\\'s my financial health score?')">Health score</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('I think I might be having a baby — can you help me budget for childcare?')">New baby budget</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('Can I afford a £300,000 mortgage?')">Mortgage check</button>
+      <button class="suggestion-chip" onclick="sendSuggestion('Where can I save money?')">Save money</button>
+    </div>
+
+    <div class="chat-input-area">
+      <textarea
+        id="chat-input"
+        placeholder="Ask about your finances…"
+        rows="1"
+        onkeydown="handleInputKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button class="chat-send-btn" id="send-btn" onclick="sendMessage()" title="Send">➤</button>
+    </div>
+
+    <div class="fca-notice">
+      AI Sage provides guidance only, not regulated financial advice.
+    </div>
+
+  </div>
+
+  <script src="chat_panel.js"></script>
+</body>
+</html>

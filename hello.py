@@ -56,9 +56,12 @@ def main():
         if not user_input:
             continue
         if user_input.lower() == "quit":
+            print("Saving session summary...")
+            agent.end_session()
             print("Goodbye!")
             break
         if user_input.lower() == "reset":
+            agent.end_session()
             agent = CoachingAgent(get_demo_customer())
             print("Coach: Session reset. How can I help you?\n")
             continue

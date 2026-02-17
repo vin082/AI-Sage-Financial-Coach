@@ -171,6 +171,103 @@ class TransactionAnalyser:
             ],
         }
 
+    def get_long_term_trends(self, months: int = 12) -> dict[str, Any]:
+        """
+        Compute long-term spending trends over up to 12 months.
+        Returns:
+          - month-by-month spend/income/surplus
+          - YoY category comparison (last 3 months vs same 3 months prior year)
+          - overall spend trajectory (linear regression direction)
+          - average monthly surplus trend
+        """
+        months = max(3, min(12, months))
+        summaries = self._build_monthly_summaries(months)
+        if not summaries:
+            return {"error": "Not enough transaction history for trend analysis."}
+
+        # Month-by-month timeline
+        timeline = [
+            {
+                "month": f"{s.year}-{s.month:02d}",
+                "income": f"£{s.total_credit:.2f}",
+                "spend": f"£{s.total_debit:.2f}",
+                "surplus": f"£{s.net:.2f}",
+            }
+            for s in summaries
+        ]
+
+        # Average surplus trend: compare first half vs second half
+        mid = len(summaries) // 2
+        first_half_surplus = self._safe_avg([s.net for s in summaries[:mid]])
+        second_half_surplus = self._safe_avg([s.net for s in summaries[mid:]])
+        surplus_direction = "improving" if second_half_surplus > first_half_surplus else (
+            "declining" if second_half_surplus < first_half_surplus else "stable"
+        )
+        surplus_change = abs(second_half_surplus - first_half_surplus)
+
+        # Highest and lowest spend months over the period
+        highest_spend = max(summaries, key=lambda s: s.total_debit)
+        lowest_spend = min(summaries, key=lambda s: s.total_debit)
+
+        # Category totals over the full period
+        cutoff = self._months_ago(months)
+        all_debits = [t for t in self._debits if t.date >= cutoff]
+        category_totals = defaultdict(Decimal)
+        for t in all_debits:
+            category_totals[t.category] += abs(t.amount)
+
+        top_categories_period = [
+            {
+                "category": cat.replace("_", " ").title(),
+                "total": f"£{total:.2f}",
+                "monthly_avg": f"£{(total / months):.2f}",
+            }
+            for cat, total in sorted(category_totals.items(), key=lambda x: x[1], reverse=True)[:6]
+        ]
+
+        # YoY comparison: last 3 months spend vs 12-15 months ago (if data exists)
+        yoy_note = None
+        if months >= 12:
+            recent_3m_debits = [t for t in self._debits if t.date >= self._months_ago(3)]
+            prior_3m_debits = [
+                t for t in self._debits
+                if self._months_ago(15) <= t.date < self._months_ago(12)
+            ]
+            if recent_3m_debits and prior_3m_debits:
+                recent_total = sum(abs(t.amount) for t in recent_3m_debits)
+                prior_total = sum(abs(t.amount) for t in prior_3m_debits)
+                change_pct = ((recent_total - prior_total) / prior_total * 100).quantize(Decimal("0.1"))
+                direction = "higher" if change_pct > 0 else "lower"
+                yoy_note = (
+                    f"Spending over the last 3 months is {abs(change_pct)}% {direction} "
+                    f"than the same period last year "
+                    f"(£{recent_total:.2f} vs £{prior_total:.2f})."
+                )
+
+        result: dict[str, Any] = {
+            "analysis_period_months": months,
+            "timeline": timeline,
+            "surplus_trend": {
+                "direction": surplus_direction,
+                "change_vs_earlier_period": f"£{surplus_change:.2f}",
+                "recent_avg_monthly_surplus": f"£{second_half_surplus:.2f}",
+                "earlier_avg_monthly_surplus": f"£{first_half_surplus:.2f}",
+            },
+            "highest_spend_month": {
+                "month": f"{highest_spend.year}-{highest_spend.month:02d}",
+                "amount": f"£{highest_spend.total_debit:.2f}",
+            },
+            "lowest_spend_month": {
+                "month": f"{lowest_spend.year}-{lowest_spend.month:02d}",
+                "amount": f"£{lowest_spend.total_debit:.2f}",
+            },
+            "top_categories_over_period": top_categories_period,
+        }
+        if yoy_note:
+            result["year_on_year_comparison"] = yoy_note
+
+        return result
+
     def get_savings_opportunity(self) -> dict[str, Any]:
         """
         Identify concrete, data-backed savings opportunities.

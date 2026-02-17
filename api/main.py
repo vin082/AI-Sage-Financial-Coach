@@ -7,6 +7,7 @@ Endpoints:
   GET  /spending-insights — Get spending breakdown
   GET  /savings-opps      — Get savings opportunities
   POST /session/new       — Create a new session
+  POST /session/end       — End a session (generates + persists summary)
 
 All endpoints are authenticated (Bearer token stub — replace with
 Azure AD B2C / SSO in production).
@@ -42,8 +43,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8501"],  # Streamlit dev origin
-    allow_credentials=True,
+    allow_origins=["*"],   # Allow file:// and any localhost origin for demo
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -127,9 +128,18 @@ class SpendingInsightsResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 @app.post("/session/new", response_model=NewSessionResponse)
-def new_session(customer_id: str = Depends(verify_token)):
+def new_session(
+    customer_id: str | None = None,          # optional query param from HTML demo
+    auth_customer_id: str = Depends(verify_token),
+):
     """Create a new coaching session for the authenticated customer."""
-    profile = get_demo_customer()   # Production: load from Customer 360 API
+    # Resolve profile: query param takes precedence for demo, else use auth identity
+    resolved_id = customer_id or auth_customer_id
+    if resolved_id == "CUST_DEMO_002":
+        from data.mock_transactions import get_demo_customer_with_life_events
+        profile = get_demo_customer_with_life_events()
+    else:
+        profile = get_demo_customer()
     session_id = str(uuid.uuid4())
     agent = CoachingAgent(profile)
     _agents[session_id] = agent
@@ -203,6 +213,47 @@ def spending_insights(months: int = 3, customer_id: str = Depends(verify_token))
             for c in insights.top_categories
         ],
     )
+
+
+@app.get("/session/profile")
+def session_profile(session_id: str, customer_id: str = Depends(verify_token)):
+    """
+    Return lightweight customer profile for the onboarding flow.
+    Tells the UI whether this is a first visit and what goals/prefs already exist.
+    """
+    agent = _get_agent(session_id)
+    mem = agent.customer_memory
+    return {
+        "customer_name": agent.profile.name,
+        "conversation_count": mem.conversation_count,
+        "is_first_visit": mem.conversation_count == 0,
+        "active_goals": [
+            {
+                "goal_id": g.goal_id,
+                "description": g.description,
+                "target_amount": g.target_amount,
+                "target_date": g.target_date,
+            }
+            for g in mem.active_goals
+        ],
+        "preferences": {
+            "preferred_tone": mem.preferences.preferred_tone,
+            "preferred_topics": mem.preferences.preferred_topics,
+        },
+    }
+
+
+@app.post("/session/end")
+def end_session(session_id: str, customer_id: str = Depends(verify_token)):
+    """
+    End a coaching session — generates a session summary and persists it
+    to the customer store for context continuity in future sessions.
+    Removes the agent from the in-memory pool.
+    """
+    agent = _get_agent(session_id)
+    agent.end_session()      # generates summary + saves to JSON store
+    _agents.pop(session_id, None)
+    return {"status": "ok", "session_id": session_id, "message": "Session ended and summary saved."}
 
 
 @app.get("/health")

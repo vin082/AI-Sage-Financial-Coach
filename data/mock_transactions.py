@@ -148,7 +148,7 @@ def generate_customer(
             transaction_id=f"TXN_{txn_counter:05d}",
             date=salary_date,
             amount=profile.monthly_salary,
-            merchant="LLOYDS PAYROLL - Employer Ltd",
+            merchant="BACS PAYROLL - Employer Ltd",
             category="salary",
             channel="bacs",
             balance_after=balance,
@@ -186,12 +186,14 @@ def generate_customer(
 # ---------------------------------------------------------------------------
 
 def get_demo_customer() -> CustomerProfile:
-    """Returns a single reproducible demo customer for presentations."""
+    """Returns a single reproducible demo customer for presentations.
+    Generates 12 months of data to support long-term trend analysis (Epic 2.4).
+    """
     return generate_customer(
         customer_id="CUST_DEMO_001",
         name="Alex Johnson",
         monthly_salary=3200.0,
-        months=6,
+        months=12,
         seed=42,
     )
 
@@ -208,12 +210,12 @@ def get_demo_customer_with_life_events() -> CustomerProfile:
 
     Use this profile when demoing Epic 2.1 life event detection.
     """
-    # Build base profile with standard transactions
+    # Build base profile with 12 months of standard transactions (Epic 2.4)
     profile = generate_customer(
         customer_id="CUST_DEMO_002",
         name="Alex Johnson",
         monthly_salary=3200.0,
-        months=6,
+        months=12,
         seed=42,
     )
 

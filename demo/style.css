@@ -734,3 +734,190 @@ body {
   transition: background 0.2s;
 }
 .notif-cta:hover { background: var(--green-700); }
+
+/* =============================================
+   EXPLAINABILITY — TRACE TOGGLE BUTTON
+   ============================================= */
+
+.trace-toggle-btn {
+  background: none; border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 6px; color: rgba(255,255,255,0.75);
+  font-size: 0.9rem; padding: 3px 8px; cursor: pointer;
+  margin-right: 6px; transition: all 0.2s; line-height: 1;
+}
+.trace-toggle-btn:hover,
+.trace-toggle-btn.active {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.6);
+  color: var(--white);
+}
+
+/* =============================================
+   EXPLAINABILITY — TRACE SIDE PANEL
+   ============================================= */
+
+#trace-panel {
+  position: absolute;
+  top: 60px;               /* below chat header */
+  right: 0;
+  width: 280px;
+  bottom: 0;
+  background: var(--grey-900);
+  color: var(--white);
+  flex-direction: column;
+  z-index: 10;
+  border-left: 1px solid rgba(255,255,255,0.1);
+  box-shadow: -4px 0 16px rgba(0,0,0,0.3);
+  font-size: 0.78rem;
+}
+
+.trace-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--green-900);
+  font-weight: 600; font-size: 0.82rem;
+  color: var(--gold);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+.trace-close-btn {
+  background: none; border: none; color: rgba(255,255,255,0.5);
+  cursor: pointer; font-size: 0.9rem; padding: 0;
+}
+.trace-close-btn:hover { color: var(--white); }
+
+.trace-panel-body {
+  flex: 1; overflow-y: auto;
+  padding: 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.trace-empty {
+  color: rgba(255,255,255,0.4);
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.trace-row {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+}
+.trace-row.guard-row {
+  background: rgba(0,106,78,0.2);
+  border: 1px solid rgba(0,106,78,0.4);
+}
+.trace-step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px;
+  background: var(--green-700);
+  border-radius: 50%;
+  font-size: 0.7rem; font-weight: 700; color: var(--white);
+  flex-shrink: 0;
+}
+.trace-step-icon {
+  font-size: 1rem; flex-shrink: 0; line-height: 1.4;
+}
+.trace-step-content { flex: 1; min-width: 0; }
+.trace-step-name {
+  font-weight: 600; font-size: 0.78rem;
+  color: var(--gold-light);
+  margin-bottom: 3px;
+}
+.trace-args {
+  margin-bottom: 4px; line-height: 1.4;
+}
+.trace-arg {
+  display: inline-block;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin: 1px 2px 1px 0;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.7);
+}
+.trace-step-result {
+  font-size: 0.72rem; color: rgba(255,255,255,0.55);
+  line-height: 1.4; word-break: break-word;
+}
+.trace-step-result.pass { color: #4caf50; }
+
+/* =============================================
+   EXPLAINABILITY — "HOW I GOT THIS" DRAWER
+   ============================================= */
+
+.how-btn {
+  display: inline-block;
+  background: none;
+  border: 1px solid var(--grey-300);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  color: var(--grey-500);
+  cursor: pointer;
+  margin-top: 5px;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+.how-btn:hover { background: var(--grey-100); color: var(--grey-700); border-color: var(--grey-400); }
+
+.how-drawer {
+  background: var(--grey-50);
+  border: 1px solid var(--grey-200);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 6px;
+  font-size: 0.74rem;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.how-row {
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.how-step {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px;
+  background: var(--green-700);
+  border-radius: 50%;
+  font-size: 0.65rem; font-weight: 700; color: var(--white);
+  flex-shrink: 0; margin-top: 1px;
+}
+.how-icon { font-size: 0.9rem; flex-shrink: 0; }
+.how-tool-name { font-weight: 600; color: var(--green-800); margin-bottom: 2px; }
+.how-result    { color: var(--grey-600); line-height: 1.4; }
+.how-guard     { color: #2e7d32; font-style: italic; font-size: 0.7rem; }
+
+/* =============================================
+   INLINE CHARTS IN CHAT BUBBLES
+   ============================================= */
+
+.chart-btn {
+  display: inline-block;
+  background: var(--green-50);
+  border: 1px solid var(--green-700);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  color: var(--green-700);
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  margin-right: 4px;
+  transition: all 0.15s;
+  line-height: 1.5;
+}
+.chart-btn:hover { background: var(--green-100); border-color: var(--green-800); }
+
+.chart-container {
+  background: var(--white);
+  border: 1px solid var(--grey-200);
+  border-radius: 10px;
+  padding: 12px 10px 8px;
+  margin-top: 8px;
+  max-width: 100%;
+}
+.chart-container canvas {
+  max-height: 190px;
+  width: 100% !important;
+}

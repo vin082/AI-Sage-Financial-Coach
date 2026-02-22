@@ -958,6 +958,11 @@ class CoachingAgent:
             self.session.register_tool_call("detect_life_events")
             scan_data = json.loads(str(life_event_result))
             print(f"[LIFE EVENT BYPASS] scan found {len(scan_data.get('detected_events', []))} events")
+            self.session.add_trace_entry(
+                tool_name="detect_life_events_tool",
+                args={},
+                result_summary=self._summarise_tool_result("detect_life_events_tool", str(life_event_result)),
+            )
         except Exception as e:
             print(f"[LIFE EVENT BYPASS] scan failed: {e}")
             return None
@@ -1017,6 +1022,10 @@ Customer's message: {user_message}"""
         if input_check.result != GuardResult.PASS:
             return input_check.safe_response or "I'm unable to help with that request."
 
+        # Reset per-turn trace and chart data
+        self.session.tool_trace = []
+        self.session.chart_data = None
+
         # ---- 2. Build message history ----
         self.session.add_message("user", user_message)
         messages = [SystemMessage(content=self._system_prompt)]
@@ -1069,6 +1078,118 @@ Customer's message: {user_message}"""
 
         return final_text
 
+    @staticmethod
+    def _summarise_tool_result(tool_name: str, result_str: str) -> str:
+        """
+        Extract a short human-readable summary from a tool result JSON string
+        for the explainability trace panel.
+        """
+        try:
+            data = json.loads(result_str)
+        except Exception:
+            return str(result_str)[:120]
+
+        # Tool-specific key highlights
+        highlights = {
+            "get_spending_insights": ["average_monthly_income", "average_monthly_spend", "average_monthly_surplus", "spend_trend"],
+            "get_financial_health_score": ["overall_score", "overall_grade", "savings_rate", "months_emergency_buffer"],
+            "assess_mortgage_affordability": ["max_loan_by_income_multiple", "stress_test_pass", "surplus_after_mortgage"],
+            "analyse_debt_vs_savings": ["recommendation", "net_benefit_of_overpaying", "rate_differential"],
+            "build_budget_plan_tool": ["budget_is_viable", "total_goal_monthly_required", "discretionary_surplus_after_goals"],
+            "detect_life_events_tool": ["events_detected", "high_confidence_events"],
+            "get_long_term_trends_tool": ["trend_direction", "yoy_income_change", "yoy_spend_change"],
+            "save_goal_tool": ["action", "description", "target_amount"],
+            "get_my_goals_tool": ["total_active_goals"],
+            "check_product_eligibility_tool": ["recommended_products"],
+            "escalate_to_adviser": ["handoff_reference", "next_step"],
+        }
+        keys = highlights.get(tool_name, list(data.keys())[:4])
+        parts = []
+        for k in keys:
+            if k in data and data[k] is not None:
+                parts.append(f"{k.replace('_', ' ')}: {data[k]}")
+        return " · ".join(parts) if parts else str(result_str)[:120]
+
+    @staticmethod
+    def _extract_chart_data(tool_name: str, result_str: str) -> "dict | None":
+        """
+        Extract structured chart data from a tool result for inline Chart.js rendering.
+        Returns None if this tool doesn't produce a chart, or on parse failure.
+        """
+        def _parse_gbp(s: object) -> float:
+            try:
+                return float(str(s).replace("£", "").replace(",", ""))
+            except Exception:
+                return 0.0
+
+        try:
+            data = json.loads(result_str)
+        except Exception:
+            return None
+
+        if tool_name == "get_spending_insights":
+            cats = data.get("top_categories", [])
+            if not cats:
+                return None
+            labels = [c.get("category", "Other") for c in cats[:6]]
+            values = [_parse_gbp(c.get("monthly_average", "0")) for c in cats[:6]]
+            return {
+                "type": "donut",
+                "title": "Monthly Spending by Category",
+                "labels": labels,
+                "values": values,
+            }
+
+        if tool_name == "get_financial_health_score":
+            pillars = data.get("pillars", [])
+            if not pillars:
+                return None
+
+            def _parse_score(s: object) -> float:
+                try:
+                    if isinstance(s, (int, float)):
+                        return float(s)
+                    return float(str(s).split("/")[0])
+                except Exception:
+                    return 0.0
+
+            labels = [p.get("name", "") for p in pillars]
+            values = [_parse_score(p.get("score", 0)) for p in pillars]
+            # Max scores per pillar: Savings Rate 30, Spend Stability 20, Essentials 20, Subscriptions 15, Buffer 15
+            max_vals = [30, 20, 20, 15, 15]
+            return {
+                "type": "radar",
+                "title": f"Financial Health · {data.get('overall_score', '?')}/100 ({data.get('overall_grade', '?')})",
+                "labels": labels,
+                "values": values,
+                "max_values": max_vals,
+            }
+
+        if tool_name == "get_long_term_trends_tool":
+            timeline = data.get("timeline", [])
+            if len(timeline) < 2:
+                return None
+            from datetime import datetime as _dt
+
+            def _month_label(ym: str) -> str:
+                try:
+                    return _dt.strptime(ym, "%Y-%m").strftime("%b '%y")
+                except Exception:
+                    return ym
+
+            labels = [_month_label(t.get("month", "")) for t in timeline]
+            income = [_parse_gbp(t.get("income", "0")) for t in timeline]
+            spend  = [_parse_gbp(t.get("spend",  "0")) for t in timeline]
+            return {
+                "type": "line",
+                "title": "Income vs Spending Trend",
+                "labels": labels,
+                "income": income,
+                "spend": spend,
+            }
+
+        return None
+
     def _run_react_loop(self, messages: list) -> str:
         """Execute the ReAct tool-calling loop and return the final text response."""
         max_iterations = 5
@@ -1092,6 +1213,18 @@ Customer's message: {user_message}"""
                         tool_result = self.tool_map[tool_name].invoke(tool_args)
                     except Exception as e:
                         tool_result = json.dumps({"error": str(e)})
+
+                # Record in explainability trace
+                self.session.add_trace_entry(
+                    tool_name=tool_name,
+                    args=tool_args,
+                    result_summary=self._summarise_tool_result(tool_name, str(tool_result)),
+                )
+
+                # Extract chart data (last chart-producing tool wins)
+                chart = self._extract_chart_data(tool_name, str(tool_result))
+                if chart:
+                    self.session.chart_data = chart
 
                 messages.append(
                     ToolMessage(content=str(tool_result), tool_call_id=tc["id"])

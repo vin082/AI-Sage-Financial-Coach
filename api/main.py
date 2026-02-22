@@ -101,6 +101,8 @@ class ChatResponse(BaseModel):
     session_id: str
     response: str
     tools_used: list[str]
+    tool_trace: list[dict]   # [{tool, args, result_summary}] for explainability panel
+    chart_data: dict | None = None   # Structured data for inline Chart.js rendering
 
 
 class HealthScoreResponse(BaseModel):
@@ -159,6 +161,8 @@ def chat(request: ChatRequest, customer_id: str = Depends(verify_token)):
         session_id=request.session_id,
         response=response,
         tools_used=agent.session.tool_calls_made[-5:],  # Last 5 tool calls
+        tool_trace=agent.session.tool_trace,             # Full trace for explainability
+        chart_data=agent.session.chart_data,             # Inline chart for spending/health/trends
     )
 
 

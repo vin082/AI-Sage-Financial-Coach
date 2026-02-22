@@ -197,6 +197,10 @@ class SessionMemory:
     loaded_insights: dict[str, Any] | None = None
     grounded_amounts: set[str] = field(default_factory=set)
     tool_calls_made: list[str] = field(default_factory=list)
+    # Explainability trace — one entry per tool call this turn, reset each chat() call
+    tool_trace: list[dict[str, Any]] = field(default_factory=list)
+    # Structured chart data for the most recent chart-producing tool call (reset each turn)
+    chart_data: dict[str, Any] | None = None
 
     def add_message(self, role: str, content: str) -> None:
         self.messages.append({"role": role, "content": content})
@@ -207,6 +211,14 @@ class SessionMemory:
 
     def register_tool_call(self, tool_name: str) -> None:
         self.tool_calls_made.append(tool_name)
+
+    def add_trace_entry(self, tool_name: str, args: dict, result_summary: str) -> None:
+        """Record a tool execution for the explainability trace."""
+        self.tool_trace.append({
+            "tool": tool_name,
+            "args": args,
+            "result_summary": result_summary,
+        })
 
 
 # ---------------------------------------------------------------------------

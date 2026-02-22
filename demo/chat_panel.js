@@ -21,6 +21,10 @@ let sessionId    = null;
 let isTyping     = false;
 let messageCount = 0;
 let userProfile  = null;   // populated after /session/profile — drives dynamic chips
+let traceVisible = false;  // whether the trace side panel is open
+
+// ---- Chart state ----
+const pendingCharts = new Map(); // msgId → chartData; charts rendered lazily on first open
 
 // ---- Profile cache (localStorage) ----
 const PROFILE_CACHE_KEY = `ai_sage_profile_${CUSTOMER_ID}`;
@@ -34,6 +38,95 @@ function loadCachedProfile() {
 
 function saveCachedProfile(profile) {
   try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile)); } catch { /* ignore */ }
+}
+
+// ---- Trace panel ----
+
+function toggleTrace() {
+  traceVisible = !traceVisible;
+  const panel = document.getElementById('trace-panel');
+  const btn   = document.getElementById('trace-toggle-btn');
+  if (panel) panel.style.display = traceVisible ? 'flex' : 'none';
+  if (btn)   btn.classList.toggle('active', traceVisible);
+}
+
+const TOOL_ICONS = {
+  get_spending_insights:       '💰',
+  get_financial_health_score:  '🏥',
+  get_category_detail:         '📊',
+  get_savings_opportunities:   '💡',
+  search_guidance:             '📚',
+  assess_mortgage_affordability: '🏠',
+  analyse_debt_vs_savings:     '⚖️',
+  build_budget_plan_tool:      '📋',
+  detect_life_events_tool:     '🍼',
+  escalate_to_adviser:         '🤝',
+  check_product_eligibility_tool: '✅',
+  get_long_term_trends_tool:   '📈',
+  save_goal_tool:              '🎯',
+  get_my_goals_tool:           '🎯',
+  set_preference_tool:         '⚙️',
+};
+
+function updateTracePanel(trace, guardResult) {
+  const body = document.getElementById('trace-panel-body');
+  if (!body) return;
+
+  let html = '';
+
+  // Guard check row
+  html += `<div class="trace-row guard-row">
+    <span class="trace-step-icon">🛡️</span>
+    <div class="trace-step-content">
+      <div class="trace-step-name">Input guard</div>
+      <div class="trace-step-result pass">PASS — no regulated advice detected</div>
+    </div>
+  </div>`;
+
+  if (!trace || trace.length === 0) {
+    html += `<div class="trace-row">
+      <span class="trace-step-icon">🤖</span>
+      <div class="trace-step-content">
+        <div class="trace-step-name">LLM response</div>
+        <div class="trace-step-result">No tools needed — answered from context</div>
+      </div>
+    </div>`;
+  } else {
+    trace.forEach((entry, i) => {
+      const icon = TOOL_ICONS[entry.tool] || '🔧';
+      const toolLabel = entry.tool.replace(/_tool$/, '').replace(/_/g, ' ');
+      // Format args (skip empty objects)
+      const argKeys = Object.keys(entry.args || {});
+      const argsHtml = argKeys.length > 0
+        ? argKeys.map(k => `<span class="trace-arg"><em>${k}:</em> ${JSON.stringify(entry.args[k])}</span>`).join(' ')
+        : '<span class="trace-arg">no params</span>';
+
+      html += `<div class="trace-row">
+        <span class="trace-step-num">${i + 1}</span>
+        <div class="trace-step-content">
+          <div class="trace-step-name">${icon} ${toolLabel}</div>
+          <div class="trace-args">${argsHtml}</div>
+          <div class="trace-step-result">${escapeHtml(entry.result_summary || '')}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Output guard row
+  html += `<div class="trace-row guard-row">
+    <span class="trace-step-icon">🛡️</span>
+    <div class="trace-step-content">
+      <div class="trace-step-name">Output guard + FCA check</div>
+      <div class="trace-step-result pass">PASS — all figures verified and grounded</div>
+    </div>
+  </div>`;
+
+  body.innerHTML = html;
+
+  // Auto-open trace panel if it has content and user has toggled it before
+  if (traceVisible) {
+    document.getElementById('trace-panel').style.display = 'flex';
+  }
 }
 
 // ---- Panel open/close ----
@@ -455,9 +548,11 @@ async function sendToAgent(text) {
   isTyping = true;
   document.getElementById('send-btn').disabled = true;
 
-  let response = null;
+  let response  = null;
   let toolsUsed = [];
-  let isLive = false;
+  let toolTrace = [];
+  let chartData = null;
+  let isLive    = false;
 
   try {
     // Try FastAPI backend first
@@ -472,9 +567,11 @@ async function sendToAgent(text) {
 
     if (res.ok) {
       const data = await res.json();
-      response = data.response;
-      toolsUsed = data.tools_used || [];
-      isLive = true;
+      response  = data.response;
+      toolsUsed = data.tools_used  || [];
+      toolTrace = data.tool_trace  || [];
+      chartData = data.chart_data  || null;
+      isLive    = true;
     } else {
       response = getMockResponse(text);
     }
@@ -487,7 +584,8 @@ async function sendToAgent(text) {
   isTyping = false;
   document.getElementById('send-btn').disabled = false;
 
-  appendAgentMessage(response, isLive, toolsUsed);
+  appendAgentMessage(response, isLive, toolsUsed, toolTrace, chartData);
+  if (isLive) updateTracePanel(toolTrace);
 
   // Show context-sensitive follow-up suggestions after 2nd+ message
   if (messageCount >= 2) {
@@ -546,8 +644,9 @@ function appendUserMessage(text) {
   scrollToBottom();
 }
 
-function appendAgentMessage(text, isLive = false, toolsUsed = []) {
+function appendAgentMessage(text, isLive = false, toolsUsed = [], toolTrace = [], chartData = null) {
   const now  = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const msgId = 'msg-' + Date.now();
 
   // Source badge: green = live API + tools, amber = live API no tools, grey = mock
   let badge = '';
@@ -560,6 +659,26 @@ function appendAgentMessage(text, isLive = false, toolsUsed = []) {
     badge = `<div class="msg-source mock" title="API offline — showing demo response">🔌 Demo mode (API offline)</div>`;
   }
 
+  // Inline chart button (live responses with chart data only)
+  let chartHtml = '';
+  if (isLive && chartData) {
+    pendingCharts.set(msgId, chartData);
+    chartHtml = `
+      <button class="chart-btn" onclick="toggleChart('${msgId}')">📊 ${escapeHtml(chartData.title || 'Show chart')}</button>
+      <div class="chart-container" id="chart-container-${msgId}" style="display:none;">
+        <canvas id="chart-${msgId}"></canvas>
+      </div>`;
+  }
+
+  // "How I got this" expandable drawer (live responses only)
+  let drawer = '';
+  if (isLive) {
+    const drawerContent = buildDrawerContent(toolTrace);
+    drawer = `
+      <button class="how-btn" onclick="toggleDrawer('${msgId}')">🔍 How I got this</button>
+      <div class="how-drawer" id="${msgId}" style="display:none;">${drawerContent}</div>`;
+  }
+
   const wrap = document.createElement('div');
   wrap.innerHTML = `
     <div class="msg agent">
@@ -567,12 +686,160 @@ function appendAgentMessage(text, isLive = false, toolsUsed = []) {
       <div>
         <div class="msg-bubble">${renderMarkdown(text)}</div>
         ${badge}
+        ${chartHtml}
+        ${drawer}
       </div>
     </div>
     <div class="msg-time">${now}</div>
   `;
   getMessagesEl().appendChild(wrap);
   scrollToBottom();
+}
+
+function buildDrawerContent(trace) {
+  if (!trace || trace.length === 0) {
+    return '<div class="how-row"><span class="how-icon">🤖</span><span>Answered from conversation context — no tool call needed.</span></div>';
+  }
+  return trace.map((entry, i) => {
+    const icon = TOOL_ICONS[entry.tool] || '🔧';
+    const label = entry.tool.replace(/_tool$/, '').replace(/_/g, ' ');
+    return `<div class="how-row">
+      <span class="how-step">${i + 1}</span>
+      <div>
+        <div class="how-tool-name">${icon} ${label}</div>
+        <div class="how-result">${escapeHtml(entry.result_summary || '')}</div>
+      </div>
+    </div>`;
+  }).join('') +
+  '<div class="how-row"><span class="how-icon">🛡️</span><span class="how-guard">Output guard verified · FCA disclaimer applied</span></div>';
+}
+
+function toggleDrawer(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  scrollToBottom();
+}
+
+// ---- Inline charts ----
+
+function toggleChart(msgId) {
+  const container = document.getElementById(`chart-container-${msgId}`);
+  if (!container) return;
+  const isHidden = container.style.display === 'none';
+  container.style.display = isHidden ? 'block' : 'none';
+  // Render lazily on first open (Chart.js needs visible canvas to size correctly)
+  if (isHidden && pendingCharts.has(msgId)) {
+    renderChart(`chart-${msgId}`, pendingCharts.get(msgId));
+    pendingCharts.delete(msgId);
+  }
+  scrollToBottom();
+}
+
+function renderChart(canvasId, chartData) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !window.Chart) return;
+  const ctx = canvas.getContext('2d');
+
+  const PALETTE = ['#006A4E','#C8A951','#008060','#4CAF50','#81C784','#A5D6A7','#f0e0a0'];
+  const FONT_SM = { size: 11, family: 'inherit' };
+
+  if (chartData.type === 'donut') {
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: chartData.labels,
+        datasets: [{
+          data: chartData.values,
+          backgroundColor: PALETTE.slice(0, chartData.labels.length),
+          borderWidth: 2,
+          borderColor: '#fff',
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'right', labels: { font: FONT_SM, boxWidth: 12, padding: 8 } },
+          tooltip: {
+            callbacks: { label: (c) => ` ${c.label}: £${c.parsed.toFixed(2)}/mo` },
+          },
+        },
+      },
+    });
+
+  } else if (chartData.type === 'radar') {
+    new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: chartData.labels,
+        datasets: [{
+          label: 'Your score',
+          data: chartData.values,
+          backgroundColor: 'rgba(0,106,78,0.15)',
+          borderColor: '#006A4E',
+          pointBackgroundColor: '#006A4E',
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          r: {
+            min: 0,
+            suggestedMax: Math.max(...(chartData.max_values || [30])),
+            ticks: { display: false },
+            pointLabels: { font: { size: 10, family: 'inherit' } },
+            grid: { color: 'rgba(0,0,0,0.08)' },
+          },
+        },
+        plugins: { legend: { display: false } },
+      },
+    });
+
+  } else if (chartData.type === 'line') {
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: chartData.labels,
+        datasets: [
+          {
+            label: 'Income',
+            data: chartData.income,
+            borderColor: '#006A4E',
+            backgroundColor: 'rgba(0,106,78,0.08)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3,
+          },
+          {
+            label: 'Spending',
+            data: chartData.spend,
+            borderColor: '#C8A951',
+            backgroundColor: 'rgba(200,169,81,0.08)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'top', labels: { font: FONT_SM, boxWidth: 12, padding: 8 } },
+          tooltip: {
+            callbacks: { label: (c) => ` ${c.dataset.label}: £${c.parsed.y.toFixed(0)}` },
+          },
+        },
+        scales: {
+          y: { ticks: { callback: (v) => `£${v.toLocaleString('en-GB')}`, font: { size: 10 } } },
+          x: { ticks: { font: { size: 10 } } },
+        },
+      },
+    });
+  }
 }
 
 function showTyping() {

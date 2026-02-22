@@ -278,7 +278,19 @@
         <h3>AI Sage Financial Coach</h3>
         <p><span class="chat-status-dot"></span>Online · Powered by your transaction data</p>
       </div>
+      <button class="trace-toggle-btn" id="trace-toggle-btn" onclick="toggleTrace()" title="Show how AI Sage thinks">🔍</button>
       <button class="chat-close-btn" onclick="closeChat()">✕</button>
+    </div>
+
+    <!-- ===== TRACE SIDE PANEL ===== -->
+    <div id="trace-panel" style="display:none;">
+      <div class="trace-panel-header">
+        <span>🔍 How AI Sage thinks</span>
+        <button class="trace-close-btn" onclick="toggleTrace()">✕</button>
+      </div>
+      <div class="trace-panel-body" id="trace-panel-body">
+        <div class="trace-empty">Send a message to see the reasoning trace here.</div>
+      </div>
     </div>
 
     <!-- ===== ONBOARDING FLOW ===== -->
@@ -462,6 +474,7 @@
 
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="chat_panel.js"></script>
 </body>
 </html>

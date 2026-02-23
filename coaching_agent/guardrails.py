@@ -101,6 +101,30 @@ FINANCIAL_ALLOWLIST = [
     r"\b(health score|insurance premium|subscription)\b",
 ]
 
+# ---------------------------------------------------------------------------
+# Financial distress patterns — trigger proactive support signposting
+# ---------------------------------------------------------------------------
+
+DISTRESS_PATTERNS = [
+    r"\b(can't|cannot|struggle to)\b.*(pay|afford).*(bill|rent|mortgage|loan|debt)",
+    r"\b(bailiff|debt collector|repossession|eviction|bankruptcy|bankrupt|insolvent|iva)\b",
+    r"\b(overwhelmed|drowning)\b.*(debt|money|bills|finance)",
+    r"\b(desperate|crisis|emergency)\b.*(money|financial|cash|fund)",
+    r"\bcan't (make|meet) ends?\b",
+]
+
+DISTRESS_RESPONSE = (
+    "I'm sorry to hear you're going through a difficult time. "
+    "Before we look at your finances together, I want to make sure you know about some "
+    "**free, confidential support** that's available to you:\n\n"
+    "- **MoneyHelper** (free & impartial): 0800 138 7777 | moneyhelper.org.uk\n"
+    "- **StepChange Debt Charity**: 0800 138 1111 | stepchange.org\n"
+    "- **National Debtline**: 0808 808 4000 | nationaldebtline.org\n\n"
+    "These services are completely free and can help with debt advice, budgeting and "
+    "negotiating with creditors. Would you still like me to look at your transaction data "
+    "to help identify where we can make improvements?"
+)
+
 # Patterns to detect if LLM hallucinated a number not from grounded data
 # e.g. "£1,234.56" that wasn't in the context
 CURRENCY_PATTERN = re.compile(r"£[\d,]+\.?\d*")
@@ -129,6 +153,16 @@ def check_input(user_message: str) -> GuardDecision:
     Called BEFORE the message reaches the LLM.
     """
     msg_lower = user_message.lower()
+
+    # Check financial distress — Consumer Duty proactive signpost (before regulated check)
+    for pattern in DISTRESS_PATTERNS:
+        if re.search(pattern, msg_lower, re.IGNORECASE):
+            return GuardDecision(
+                result=GuardResult.REDIRECT,
+                intent=IntentType.GENERAL_QUERY,
+                reason="Message indicates potential financial distress.",
+                safe_response=DISTRESS_RESPONSE,
+            )
 
     # Check regulated advice
     for pattern in REGULATED_ADVICE_PATTERNS:

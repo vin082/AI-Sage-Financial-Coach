@@ -8,6 +8,36 @@
 </head>
 <body>
 
+  <!-- ===== GDPR / AI CONSENT MODAL ===== -->
+  <div class="consent-overlay" id="consent-overlay" role="dialog" aria-modal="true" aria-labelledby="consent-title">
+    <div class="consent-modal">
+      <div class="consent-header">
+        <span class="consent-icon">🔒</span>
+        <h2 id="consent-title">Before we begin</h2>
+      </div>
+      <div class="consent-body">
+        <p><strong>AI Sage is an AI assistant, not a human financial adviser.</strong></p>
+        <p>To provide personalised guidance, AI Sage will analyse your transaction data and account information. By continuing, you confirm you understand and agree to the following:</p>
+        <ul>
+          <li>Your financial data will be processed by an AI system to generate guidance.</li>
+          <li>AI Sage provides <strong>financial guidance only</strong>, not regulated financial advice under FSMA 2000.</li>
+          <li>Data is processed in accordance with our <a href="#" class="consent-link">Privacy Notice</a> and UK GDPR.</li>
+          <li>You can withdraw consent or speak to a human adviser at any time.</li>
+        </ul>
+        <p class="consent-fos">
+          <strong>Complaints:</strong> If you're unhappy with our service, contact us or the
+          <strong>Financial Ombudsman Service</strong> — 0800 023 4567 ·
+          <a href="https://www.financial-ombudsman.org.uk" target="_blank" class="consent-link">financial-ombudsman.org.uk</a>
+        </p>
+      </div>
+      <div class="consent-actions">
+        <button class="consent-decline" onclick="declineConsent()">No thanks, close</button>
+        <button class="consent-accept" onclick="acceptConsent()">I understand &amp; agree</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== END CONSENT MODAL ===== -->
+
   <!-- ===== TOP NAV ===== -->
   <nav class="top-nav">
     <a class="nav-brand" href="dashboard.html">
@@ -469,7 +499,11 @@
     </div>
 
     <div class="fca-notice">
-      AI Sage provides guidance only, not regulated financial advice.
+      <span>AI Sage is an AI assistant providing financial guidance, not regulated advice (FSMA 2000).</span>
+      <span class="fca-divider">·</span>
+      <span>Complaints: <strong>Financial Ombudsman Service</strong> 0800 023 4567</span>
+      <span class="fca-divider">·</span>
+      <span><a href="#" onclick="showPrivacyNotice()" class="fca-link">Privacy &amp; Data</a></span>
     </div>
 
   </div>

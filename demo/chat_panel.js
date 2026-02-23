@@ -26,6 +26,42 @@ let traceVisible = false;  // whether the trace side panel is open
 // ---- Chart state ----
 const pendingCharts = new Map(); // msgId → chartData; charts rendered lazily on first open
 
+// ---- GDPR consent (localStorage) ----
+const CONSENT_KEY = 'ai_sage_gdpr_consent_v1';
+
+function hasConsented() {
+  try { return localStorage.getItem(CONSENT_KEY) === 'granted'; } catch { return false; }
+}
+
+function acceptConsent() {
+  try { localStorage.setItem(CONSENT_KEY, 'granted'); } catch { /* ignore */ }
+  const overlay = document.getElementById('consent-overlay');
+  if (overlay) overlay.style.display = 'none';
+  // Proceed to open the chat panel (called from openChat's consent gate)
+  _openChatAfterConsent(_pendingPrefill);
+  _pendingPrefill = '';
+}
+
+function declineConsent() {
+  const overlay = document.getElementById('consent-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function showPrivacyNotice() {
+  alert(
+    'AI Sage Privacy Notice (Demo)\n\n' +
+    'Your transaction data is processed by an AI system to generate personalised financial guidance.\n\n' +
+    'Data processed: account balances, transactions, spending categories, salary credits.\n' +
+    'Legal basis: Legitimate interests (personalised banking guidance) / Consent.\n' +
+    'Retention: Session data is held for the duration of your session. Goals and preferences are stored for continuity.\n' +
+    'Third-party AI: Azure OpenAI (Microsoft Azure, UK region) processes your anonymised transaction summaries.\n\n' +
+    'Your rights: Access, Rectification, Erasure, Restriction, Portability — contact dpo@bank.co.uk\n\n' +
+    'To withdraw consent, clear your browser storage or contact us.'
+  );
+}
+
+let _pendingPrefill = '';
+
 // ---- Profile cache (localStorage) ----
 const PROFILE_CACHE_KEY = `ai_sage_profile_${CUSTOMER_ID}`;
 
@@ -132,6 +168,17 @@ function updateTracePanel(trace, guardResult) {
 // ---- Panel open/close ----
 
 function openChat(prefillText = '') {
+  // Show GDPR consent modal on first use — required before processing financial data
+  if (!hasConsented()) {
+    _pendingPrefill = prefillText;
+    const overlay = document.getElementById('consent-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    return;
+  }
+  _openChatAfterConsent(prefillText);
+}
+
+function _openChatAfterConsent(prefillText = '') {
   document.getElementById('chat-panel').classList.add('open');
   document.getElementById('chat-overlay').classList.add('open');
 

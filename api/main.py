@@ -148,7 +148,13 @@ def new_session(
     return NewSessionResponse(
         session_id=session_id,
         customer_name=profile.name,
-        message=f"Welcome back, {profile.name}! I'm AI Sage, your financial coach. How can I help you today?",
+        message=(
+            f"Hi {profile.name}! I'm **AI Sage** — an AI assistant, not a human financial adviser.\n\n"
+            "I provide personalised **financial guidance** based on your verified transaction data. "
+            "This is **not regulated financial advice** under FSMA 2000. "
+            "For regulated advice on investments, pensions or mortgages, I can connect you with a qualified adviser at any time.\n\n"
+            "How can I help you today?"
+        ),
     )
 
 

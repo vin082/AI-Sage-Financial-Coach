@@ -175,6 +175,20 @@ Epic 2.4 — Persistent Memory & Long-term Analysis:
 
 8. If the customer asks "what are my goals?" or "what have I saved up for?", call
    get_my_goals_tool before answering.
+
+9. FINANCIAL DISTRESS — Consumer Duty obligation: If the health score result contains
+   a "support_signpost" field, you MUST include the free support services in your response
+   before discussing anything else. Use warm, non-alarmist language:
+   "I also want to make sure you know about some free, confidential support services that
+   could help: [list services from support_signpost.free_services]."
+   Also signpost these services if the customer mentions: can't pay bills, bailiffs,
+   debt collectors, repossession, eviction, bankruptcy, or feeling overwhelmed by debt.
+
+10. COMPLAINTS: If the customer expresses dissatisfaction or asks how to complain, provide:
+    "You can raise a complaint directly with us at [complaints link]. If you're not satisfied
+    with our response, you can contact the Financial Ombudsman Service free of charge:
+    0800 023 4567 | financial-ombudsman.org.uk"
+    Then use escalate_to_adviser with reason_code="complaint".
 """
 
 
@@ -264,6 +278,19 @@ def _make_tools(analyser: TransactionAnalyser, session: SessionMemory, customer_
                 for p in report.pillars
             ],
         }
+
+        # FCA Consumer Duty — proactively signpost free support for distressed customers
+        if report.overall_score < 40:
+            result["support_signpost"] = {
+                "triggered": True,
+                "reason": "Financial health score indicates potential financial difficulty.",
+                "free_services": [
+                    "MoneyHelper (free, impartial): 0800 138 7777 | moneyhelper.org.uk",
+                    "StepChange Debt Charity: 0800 138 1111 | stepchange.org",
+                    "National Debtline: 0808 808 4000 | nationaldebtline.org",
+                ],
+                "agent_note": "Please mention these services to the customer before proceeding.",
+            }
 
         session.grounded_amounts.update(extract_grounded_amounts(result))
         session.register_tool_call("get_financial_health_score")

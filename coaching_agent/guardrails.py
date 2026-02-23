@@ -106,11 +106,19 @@ FINANCIAL_ALLOWLIST = [
 # ---------------------------------------------------------------------------
 
 DISTRESS_PATTERNS = [
-    r"\b(can't|cannot|struggle to)\b.*(pay|afford).*(bill|rent|mortgage|loan|debt)",
+    # "can't / cant / cannot / struggling to" + pay/afford + bill/rent etc.
+    r"\bcan'?t\b.*(pay|afford).*(bill|rent|mortgage|loan|debt)",
+    r"\b(cannot|struggle to|struggling to|unable to)\b.*(pay|afford).*(bill|rent|mortgage|loan|debt)",
+    # Explicit crisis terms
     r"\b(bailiff|debt collector|repossession|eviction|bankruptcy|bankrupt|insolvent|iva)\b",
     r"\b(overwhelmed|drowning)\b.*(debt|money|bills|finance)",
     r"\b(desperate|crisis|emergency)\b.*(money|financial|cash|fund)",
-    r"\bcan't (make|meet) ends?\b",
+    # "can't / cant make ends meet"
+    r"\bcan'?t (make|meet) ends?\b",
+    # Direct "can't pay" without specifying bill type
+    r"\bcan'?t\s+(?:pay|afford)\b",
+    # "pay my bills / pay bills this month"
+    r"\bpay\b.*(my\s+)?(bill|rent|mortgage|loan)s?\b.*(month|week|time|now)\b",
 ]
 
 DISTRESS_RESPONSE = (

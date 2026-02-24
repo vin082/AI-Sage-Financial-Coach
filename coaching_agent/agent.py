@@ -1154,6 +1154,9 @@ Customer's message: {user_message}"""
         except Exception:
             return None
 
+        if not isinstance(data, dict):
+            return None
+
         if tool_name == "get_spending_insights":
             cats = data.get("top_categories", [])
             if not cats:

@@ -1,7 +1,8 @@
 ---
 name: Test Execution Reporter
 description: Runs the full AI Sage pytest suite, captures results, calculates coverage per module, identifies regressions against the last passing run, and produces a structured test report. Acts as the pre-push quality gate — blocks pushes if any test fails.
-tools: ['run/terminal','read/files','edit/editFiles','search/codebase']
+tools: Bash, Grep, Glob, Read, Write, Edit
+model: haiku
 ---
 ---
 
@@ -187,7 +188,18 @@ print('MoneyHelper present:', 'PASS' if 'MoneyHelper' in (r.safe_response or '')
 
 ## Output Document
 
-Save to `docs/test-reports/test-run-[YYYY-MM-DD]-[HH-MM].md`:
+**MANDATORY: Use the Write tool to create the report file on disk.**
+
+First get today's date:
+```bash
+python3 -c "from datetime import date; print(date.today())"
+```
+
+Then call the Write tool with:
+- **file_path**: `e:/LBG Customer AI Super Agent/docs/test-reports/YYYY-MM-DD-HH-MM-test-run.md` (replace YYYY-MM-DD with today's date)
+- **content**: the completed report markdown below
+
+The file MUST exist on disk after the Write tool call completes.
 
 ```markdown
 # Test Execution Report — [Date Time]

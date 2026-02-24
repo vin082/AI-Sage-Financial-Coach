@@ -1,7 +1,8 @@
 ---
 name: Anti-Hallucination Auditor
 description: Verifies that every £ figure in an AI Sage response was pre-computed by a deterministic Python tool and registered in session.grounded_amounts before the LLM narrated it. The most critical quality gate for this app — catches hallucination regressions before they reach customers.
-tools: ['search/codebase','read/files','run/terminal','edit/editFiles']
+tools: Bash, Grep, Glob, Read, Edit
+model: haiku
 ---
 ---
 
@@ -128,7 +129,18 @@ For each commit touching `agent.py`, `guardrails.py`, or `tools/*.py`:
 
 ## Output Document
 
-Save to `docs/audits/hallucination-audit-[YYYY-MM-DD].md`:
+**MANDATORY: Use the Write tool to create the report file on disk.**
+
+First get today's date:
+```bash
+python3 -c "from datetime import date; print(date.today())"
+```
+
+Then call the Write tool with:
+- **file_path**: `e:/LBG Customer AI Super Agent/docs/audits/YYYY-MM-DD-hallucination-audit.md` (replace YYYY-MM-DD with today's date)
+- **content**: the completed report markdown below
+
+The file MUST exist on disk after the Write tool call completes.
 
 ```markdown
 # Anti-Hallucination Audit — [Date]

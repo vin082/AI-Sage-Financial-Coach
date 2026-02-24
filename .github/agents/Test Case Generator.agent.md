@@ -1,7 +1,8 @@
 ---
 name: Test Case Generator
 description: Reads the AI Sage codebase — tools, guardrails, API endpoints, data models and memory — and generates a comprehensive pytest test suite covering happy paths, boundary values, edge cases and regression scenarios. Writes directly to the tests/ directory.
-tools: ['read/files','search/codebase','edit/editFiles','run/terminal']
+tools: Bash, Grep, Glob, Read, Write, Edit
+model: sonnet
 ---
 ---
 
@@ -486,7 +487,20 @@ Fix any import errors or API mismatches before finalising.
 
 1. Write test files directly to `tests/test_guardrails.py`, `tests/test_tools.py`,
    `tests/test_api.py`, `tests/test_memory.py`, `tests/test_chart_extraction.py`
-2. Save summary to `docs/test-reports/test-generation-[YYYY-MM-DD].md`:
+2. **MANDATORY: Use the Write tool to save the summary to disk.**
+
+First get today's date:
+```bash
+python3 -c "from datetime import date; print(date.today())"
+```
+
+Then call the Write tool with:
+- **file_path**: `e:/LBG Customer AI Super Agent/docs/test-reports/YYYY-MM-DD-test-generation-summary.md` (replace YYYY-MM-DD with today's date)
+- **content**: the completed summary markdown below
+
+The file MUST exist on disk after the Write tool call completes.
+
+Content:
 
 ```markdown
 # Test Generation Report — [Date]

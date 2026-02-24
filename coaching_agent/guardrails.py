@@ -62,6 +62,12 @@ REGULATED_ADVICE_PATTERNS = [
     r"\b(legal advice|legal claim|sue|lawsuit)\b",
     # Borrowing without full context
     r"\b(should I|can I afford to)\b.*(borrow|take out a loan|remortgage)\b",
+    # "which [financial product]" selection requests — e.g. "which ISA", "which fund manager"
+    r"\bwhich\b.*(isa|fund|pension|mortgage|lender|savings account|investment provider|credit card)\b",
+    # "pick/choose/select a [product]" — e.g. "can you pick a mortgage lender"
+    r"\b(pick|choose|select)\b.*(mortgage|lender|fund|isa|pension|provider|account)\b",
+    # "best [product]" superlatives with words between — e.g. "best savings account rate"
+    r"\bbest\b.*(savings account|mortgage deal|isa|pension fund|fund manager|interest rate|lender)\b",
 ]
 
 # Topics outside scope — general knowledge and non-financial subjects.
@@ -110,9 +116,11 @@ DISTRESS_PATTERNS = [
     r"\bcan'?t\b.*(pay|afford).*(bill|rent|mortgage|loan|debt)",
     r"\b(cannot|struggle to|struggling to|unable to)\b.*(pay|afford).*(bill|rent|mortgage|loan|debt)",
     # Explicit crisis terms
-    r"\b(bailiff|debt collector|repossession|eviction|bankruptcy|bankrupt|insolvent|iva)\b",
+    r"\b(bailiff|debt collectors?|repossession|eviction|bankruptcy|bankrupt|insolvent|iva)\b",
     r"\b(overwhelmed|drowning)\b.*(debt|money|bills|finance)",
-    r"\b(desperate|crisis|emergency)\b.*(money|financial|cash|fund)",
+    # financial distress — NOT "emergency fund" (savings concept, not crisis)
+    r"\b(desperate|in crisis|financial crisis|financial emergency)\b",
+    r"\b(desperate|crisis|emergency)\b.*(money|financial|cash)\b(?!.*fund\b)",
     # "can't / cant make ends meet"
     r"\bcan'?t (make|meet) ends?\b",
     # Direct "can't pay" without specifying bill type

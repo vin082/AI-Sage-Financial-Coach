@@ -1,7 +1,8 @@
 ---
 name: FCA Compliance Reviewer
 description: Domain expert for FCA (UK) compliance in AI financial coaching systems. Reviews code changes, API responses and agent behaviour against FSMA 2000, Consumer Duty (PRIN 12), FG21/1 (vulnerable customers), UK GDPR, COBS 4 (financial promotions) and FCA DISP (complaints). Acts as the compliance sign-off gate before merging to main.
-tools: ['search/codebase','read/files','edit/editFiles','search','read/problems']
+tools: Bash, Grep, Glob, Read, Edit, WebSearch
+model: sonnet
 ---
 ---
 
@@ -158,7 +159,18 @@ Common gaps to check:
 
 ## Output Document
 
-Save to `docs/compliance/fca-review-[YYYY-MM-DD]-[branch-or-pr].md`:
+**MANDATORY: Use the Write tool to create the report file on disk.**
+
+First get today's date:
+```bash
+python3 -c "from datetime import date; print(date.today())"
+```
+
+Then call the Write tool with:
+- **file_path**: `e:/LBG Customer AI Super Agent/docs/compliance/YYYY-MM-DD-fca-review.md` (replace YYYY-MM-DD with today's date)
+- **content**: the completed report markdown below
+
+The file MUST exist on disk after the Write tool call completes.
 
 ```markdown
 # FCA Compliance Review — [Branch/PR] — [Date]

@@ -29,7 +29,23 @@ load_dotenv()
 from coaching_agent.agent import CoachingAgent
 from coaching_agent.tools.financial_health import compute_health_score
 from coaching_agent.tools.transaction_analyser import TransactionAnalyser
-from data.mock_transactions import get_demo_customer
+from data.mock_transactions import (
+    get_demo_customer,
+    get_demo_customer_with_life_events,
+    get_persona_spontaneous_spender,
+    get_persona_cautious_planner,
+    get_persona_reactive_manager,
+    get_persona_balanced_achiever,
+)
+
+# Map customer IDs to their persona loader functions
+_PERSONA_LOADERS = {
+    "CUST_DEMO_002": get_demo_customer_with_life_events,
+    "CUST_DEMO_003": get_persona_spontaneous_spender,
+    "CUST_DEMO_004": get_persona_cautious_planner,
+    "CUST_DEMO_005": get_persona_reactive_manager,
+    "CUST_DEMO_006": get_persona_balanced_achiever,
+}
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -137,11 +153,8 @@ def new_session(
     """Create a new coaching session for the authenticated customer."""
     # Resolve profile: query param takes precedence for demo, else use auth identity
     resolved_id = customer_id or auth_customer_id
-    if resolved_id == "CUST_DEMO_002":
-        from data.mock_transactions import get_demo_customer_with_life_events
-        profile = get_demo_customer_with_life_events()
-    else:
-        profile = get_demo_customer()
+    loader = _PERSONA_LOADERS.get(resolved_id, get_demo_customer)
+    profile = loader()
     session_id = str(uuid.uuid4())
     agent = CoachingAgent(profile)
     _agents[session_id] = agent

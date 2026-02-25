@@ -3,102 +3,399 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Sage — Online Banking</title>
+  <title>AI Sage — Sign In</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--grey-100);
+    }
+
+    /* Nav */
+    .login-nav {
+      background: var(--green-800);
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      height: 60px;
+      box-shadow: var(--shadow-md);
+    }
+    .login-nav .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .login-nav .logo-icon { font-size: 1.4rem; }
+    .login-nav .logo-text { color: #fff; font-weight: 700; font-size: 1.05rem; letter-spacing: .01em; }
+
+    /* Body */
+    .login-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    /* Card */
+    .login-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 2.5rem 2.5rem 2rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .login-card-header {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+    .login-card-header .brand-icon {
+      font-size: 2.4rem;
+      display: block;
+      margin-bottom: .5rem;
+    }
+    .login-card-header h1 {
+      font-size: 1.35rem;
+      color: var(--green-800);
+      font-weight: 700;
+      margin-bottom: .3rem;
+    }
+    .login-card-header p {
+      font-size: .82rem;
+      color: var(--grey-500);
+      line-height: 1.45;
+    }
+
+    /* Demo banner */
+    .demo-banner {
+      background: linear-gradient(135deg, var(--green-100), #fff);
+      border: 1px solid var(--green-600);
+      border-radius: var(--radius);
+      padding: .75rem 1rem;
+      margin-bottom: 1.75rem;
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+    }
+    .demo-banner .demo-icon { font-size: 1rem; flex-shrink: 0; margin-top: .1rem; }
+    .demo-banner p { font-size: .79rem; color: var(--green-700); line-height: 1.5; margin: 0; }
+    .demo-banner strong { color: var(--green-800); }
+
+    /* Form */
+    .login-form label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--grey-700);
+      margin-bottom: .35rem;
+      letter-spacing: .01em;
+    }
+
+    .login-form select,
+    .login-form input[type="password"] {
+      width: 100%;
+      padding: .7rem .9rem;
+      border: 1.5px solid var(--grey-300);
+      border-radius: var(--radius);
+      font-size: .9rem;
+      color: var(--grey-900);
+      background: var(--white);
+      margin-bottom: 1.25rem;
+      transition: border-color .15s;
+    }
+    .login-form select:focus,
+    .login-form input[type="password"]:focus {
+      outline: none;
+      border-color: var(--green-600);
+      box-shadow: 0 0 0 3px rgba(0, 106, 78, .12);
+    }
+
+    .persona-hint {
+      margin-top: -.9rem;
+      margin-bottom: 1.25rem;
+      font-size: .75rem;
+      color: var(--grey-500);
+      min-height: 1.2rem;
+    }
+    .personality-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      background: var(--green-100);
+      color: var(--green-800);
+      border-radius: 20px;
+      padding: .15rem .65rem;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+
+    .pw-hint {
+      font-size: .72rem;
+      color: var(--grey-400);
+      margin-top: -.9rem;
+      margin-bottom: 1.25rem;
+    }
+    .pw-hint code {
+      background: var(--grey-100);
+      padding: .1rem .3rem;
+      border-radius: 4px;
+      font-family: monospace;
+      color: var(--green-700);
+      font-size: .8rem;
+    }
+
+    .error-msg {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: var(--radius);
+      color: var(--red);
+      font-size: .8rem;
+      padding: .5rem .8rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    .btn-signin {
+      width: 100%;
+      padding: .85rem;
+      background: var(--green-700);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .01em;
+      transition: background .15s, transform .1s;
+    }
+    .btn-signin:hover { background: var(--green-800); }
+    .btn-signin:active { transform: scale(.98); }
+    .btn-signin:disabled { background: var(--grey-400); cursor: default; }
+
+    /* Persona quick-select strip */
+    .persona-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .6rem;
+      margin-top: 1.75rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--grey-200);
+    }
+    .persona-strip-label {
+      grid-column: 1 / -1;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--grey-400);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: -.2rem;
+    }
+    .persona-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .3rem;
+      padding: .55rem .4rem;
+      border-radius: var(--radius);
+      background: var(--grey-50);
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      text-align: center;
+    }
+    .persona-chip:hover { border-color: var(--green-600); background: var(--green-50); }
+    .persona-chip.active { border-color: var(--green-600); background: var(--green-100); }
+    .chip-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 700; color: #fff;
+    }
+    .chip-name { font-size: .7rem; font-weight: 600; color: var(--grey-700); line-height: 1.2; }
+    .chip-type { font-size: .63rem; color: var(--grey-400); line-height: 1.3; }
+
+    /* Footer */
+    .login-footer-bar {
+      text-align: center;
+      padding: .9rem 2rem;
+      font-size: .71rem;
+      color: var(--grey-400);
+      border-top: 1px solid var(--grey-200);
+      background: var(--white);
+    }
+    .login-footer-bar a { color: var(--green-600); text-decoration: none; }
+  </style>
 </head>
 <body class="login-page">
 
-  <div class="login-card">
-
-    <!-- Logo -->
-    <div class="login-logo">
+  <nav class="login-nav">
+    <a class="logo-wrap" href="login.html">
       <div class="logo-icon">🏦</div>
-      <h1>AI Sage Online Banking</h1>
-      <p>Secure personal banking</p>
-    </div>
+      <span class="logo-text">Lloyds Banking Group — Online Banking</span>
+    </a>
+  </nav>
 
-    <!-- Error banner (hidden by default) -->
-    <div class="login-error" id="login-error">
-      Incorrect User ID or password. Please try again.
-    </div>
+  <div class="login-body">
+    <div class="login-card">
 
-    <!-- Login form -->
-    <form id="login-form" onsubmit="handleLogin(event)">
-      <div class="form-group">
-        <label for="userid">User ID</label>
-        <input
-          type="text"
-          id="userid"
-          placeholder="Enter your User ID"
-          autocomplete="username"
-          required
-        />
+      <div class="login-card-header">
+        <span class="brand-icon">🤖</span>
+        <h1>AI Sage — Demo Environment</h1>
+        <p>Select a customer persona to explore how AI Sage adapts<br/>to different financial profiles and coaching needs.</p>
       </div>
 
-      <div class="form-group">
+      <div class="demo-banner">
+        <span class="demo-icon">ℹ️</span>
+        <p><strong>Demo credentials:</strong> Select any persona below, then enter password <strong>LBG@2026</strong>.
+          Each persona has distinct spending behaviour, health scores, and coaching scenarios.</p>
+      </div>
+
+      <form class="login-form" onsubmit="handleSignIn(event)">
+
+        <label for="persona-select">Customer Persona</label>
+        <select id="persona-select" onchange="onPersonaChange()">
+          <option value="" disabled selected>— Select a persona —</option>
+          <option value="CUST_DEMO_001">Alex Johnson — Steady Saver</option>
+          <option value="CUST_DEMO_002">Alex Johnson — Goal Crusher (Life Events)</option>
+          <option value="CUST_DEMO_003">Jordan Lee — Spontaneous Spender</option>
+          <option value="CUST_DEMO_004">Sam Carter — Cautious Planner</option>
+          <option value="CUST_DEMO_005">Morgan Davies — Reactive Manager</option>
+          <option value="CUST_DEMO_006">Jamie Williams — Balanced Achiever</option>
+        </select>
+        <div class="persona-hint" id="persona-hint"></div>
+
         <label for="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          placeholder="Enter your password"
-          autocomplete="current-password"
-          required
-        />
+        <input type="password" id="password" placeholder="Enter demo password" autocomplete="current-password" />
+        <p class="pw-hint">Demo password: <code>LBG@2026</code></p>
+
+        <div class="error-msg" id="error-msg">Incorrect password. Use <strong>LBG@2026</strong>.</div>
+
+        <button type="submit" class="btn-signin" id="signin-btn">Sign in to AI Sage</button>
+      </form>
+
+      <!-- Persona quick-select strip -->
+      <div class="persona-strip">
+        <div class="persona-strip-label">Quick select</div>
+        <div class="persona-chip" onclick="selectPersona('CUST_DEMO_001')" id="chip-CUST_DEMO_001">
+          <div class="chip-avatar" style="background:#006A4E">AJ</div>
+          <div class="chip-name">Alex J.</div>
+          <div class="chip-type">💰 Steady Saver</div>
+        </div>
+        <div class="persona-chip" onclick="selectPersona('CUST_DEMO_002')" id="chip-CUST_DEMO_002">
+          <div class="chip-avatar" style="background:#2563eb">AJ</div>
+          <div class="chip-name">Alex J.</div>
+          <div class="chip-type">🎯 Goal Crusher</div>
+        </div>
+        <div class="persona-chip" onclick="selectPersona('CUST_DEMO_003')" id="chip-CUST_DEMO_003">
+          <div class="chip-avatar" style="background:#ea580c">JL</div>
+          <div class="chip-name">Jordan L.</div>
+          <div class="chip-type">🛍️ Spender</div>
+        </div>
+        <div class="persona-chip" onclick="selectPersona('CUST_DEMO_004')" id="chip-CUST_DEMO_004">
+          <div class="chip-avatar" style="background:#0891b2">SC</div>
+          <div class="chip-name">Sam C.</div>
+          <div class="chip-type">📊 Planner</div>
+        </div>
+        <div class="persona-chip" onclick="selectPersona('CUST_DEMO_005')" id="chip-CUST_DEMO_005">
+          <div class="chip-avatar" style="background:#dc2626">MD</div>
+          <div class="chip-name">Morgan D.</div>
+          <div class="chip-type">⚡ Reactive</div>
+        </div>
+        <div class="persona-chip" onclick="selectPersona('CUST_DEMO_006')" id="chip-CUST_DEMO_006">
+          <div class="chip-avatar" style="background:#7c3aed">JW</div>
+          <div class="chip-name">Jamie W.</div>
+          <div class="chip-type">⚖️ Balanced</div>
+        </div>
       </div>
 
-      <button type="submit" class="login-btn" id="login-btn">
-        Log in
-      </button>
-    </form>
-
-    <div class="login-links">
-      <a href="#">Forgotten User ID?</a>
-      <a href="#">Reset password</a>
     </div>
-
   </div>
 
-  <!-- Security badges below card -->
-  <div class="login-security-badges">
-    <div class="security-badge">🔒 256-bit SSL</div>
-    <div class="security-badge">🛡️ FSCS Protected</div>
-    <div class="security-badge">✅ FCA Regulated</div>
-  </div>
-
-  <div class="login-footer">
-    © 2026 AI Sage Financial Services Ltd. All rights reserved.<br/>
-    Authorised and regulated by the Financial Conduct Authority.
-  </div>
+  <footer class="login-footer-bar">
+    AI Sage is an AI assistant, not a human financial adviser. Outputs are guidance only — not regulated financial advice under FSMA 2000.
+    &nbsp;|&nbsp; <a href="#">Privacy Notice</a>
+    &nbsp;|&nbsp; Financial Ombudsman Service: 0800 023 4567
+  </footer>
 
   <script>
-    function handleLogin(e) {
-      e.preventDefault();
-      const userId   = document.getElementById('userid').value.trim();
-      const password = document.getElementById('password').value;
-      const errorEl  = document.getElementById('login-error');
-      const btn      = document.getElementById('login-btn');
+    const DEMO_PASSWORD = 'LBG@2026';
 
-      // Demo credentials
-      if (userId === 'admin' && password === 'admin') {
-        btn.textContent = 'Logging in…';
-        btn.disabled = true;
-        errorEl.style.display = 'none';
-        // Redirect to dashboard after brief pause
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+    const PERSONA_MAP = {
+      'CUST_DEMO_001': { name: 'Alex Johnson',   initials: 'AJ', type: 'Steady Saver',        salary: '£3,200/mo', emoji: '💰', color: '#006A4E', desc: 'Consistent earner, regular saving habits, moderate spending.' },
+      'CUST_DEMO_002': { name: 'Alex Johnson',   initials: 'AJ', type: 'Goal Crusher',         salary: '£3,800/mo', emoji: '🎯', color: '#2563eb', desc: 'Recent promotion + new baby + property purchase detected.' },
+      'CUST_DEMO_003': { name: 'Jordan Lee',     initials: 'JL', type: 'Spontaneous Spender',  salary: '£3,800/mo', emoji: '🛍️', color: '#ea580c', desc: 'High eating out, impulse shopping, minimal savings pot.' },
+      'CUST_DEMO_004': { name: 'Sam Carter',     initials: 'SC', type: 'Cautious Planner',     salary: '£5,200/mo', emoji: '📊', color: '#0891b2', desc: 'Top earner, disciplined spender, £1,500/mo to ISA.' },
+      'CUST_DEMO_005': { name: 'Morgan Davies',  initials: 'MD', type: 'Reactive Manager',     salary: '£2,800/mo', emoji: '⚡', color: '#dc2626', desc: 'Lower income, high bills, lives paycheck to paycheck.' },
+      'CUST_DEMO_006': { name: 'Jamie Williams', initials: 'JW', type: 'Balanced Achiever',    salary: '£4,500/mo', emoji: '⚖️', color: '#7c3aed', desc: 'Good salary, balanced lifestyle, regular savings transfers.' },
+    };
+
+    function selectPersona(id) {
+      document.getElementById('persona-select').value = id;
+      onPersonaChange();
+    }
+
+    function onPersonaChange() {
+      const id = document.getElementById('persona-select').value;
+      const persona = PERSONA_MAP[id];
+      const hint = document.getElementById('persona-hint');
+
+      // Update chips
+      Object.keys(PERSONA_MAP).forEach(cid => {
+        const chip = document.getElementById('chip-' + cid);
+        if (chip) chip.classList.toggle('active', cid === id);
+      });
+
+      if (persona) {
+        hint.innerHTML = `<span class="personality-badge">${persona.emoji} ${persona.type}</span> &nbsp;${persona.salary} &middot; ${persona.desc}`;
       } else {
-        errorEl.style.display = 'block';
-        document.getElementById('password').value = '';
-        document.getElementById('password').focus();
+        hint.innerHTML = '';
       }
     }
 
-    // Allow Enter key on User ID field to move to password
-    document.getElementById('userid').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('password').focus();
+    function handleSignIn(e) {
+      e.preventDefault();
+      const id      = document.getElementById('persona-select').value;
+      const pw      = document.getElementById('password').value;
+      const errorEl = document.getElementById('error-msg');
+      const btn     = document.getElementById('signin-btn');
+
+      if (!id) {
+        document.getElementById('persona-select').focus();
+        return;
       }
-    });
+
+      if (pw !== DEMO_PASSWORD) {
+        errorEl.classList.add('visible');
+        document.getElementById('password').select();
+        return;
+      }
+
+      errorEl.classList.remove('visible');
+      btn.textContent = 'Signing in…';
+      btn.disabled = true;
+
+      const persona = PERSONA_MAP[id];
+      try {
+        sessionStorage.setItem('ai_sage_persona', JSON.stringify({
+          customer_id: id,
+          name:        persona.name,
+          initials:    persona.initials,
+          type:        persona.type,
+          salary:      persona.salary,
+          emoji:       persona.emoji,
+          color:       persona.color,
+        }));
+      } catch (err) { /* storage unavailable — proceed anyway */ }
+
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 400);
+    }
   </script>
+
 </body>
 </html>

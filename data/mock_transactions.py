@@ -112,10 +112,15 @@ def generate_customer(
     monthly_salary: float = 3200.0,
     months: int = 6,
     seed: int = 42,
+    spend_ranges_override: dict | None = None,
+    spend_frequencies_override: dict | None = None,
 ) -> CustomerProfile:
     """
     Generate a deterministic mock customer with 6 months of transactions.
     Deterministic via seed so demos are reproducible.
+
+    spend_ranges_override / spend_frequencies_override merge with defaults,
+    allowing persona-specific spending patterns without duplicating the generator.
     """
     random.seed(seed)
 
@@ -133,6 +138,10 @@ def generate_customer(
     while start_month <= 0:
         start_month += 12
         start_year -= 1
+
+    # Merge caller overrides with module-level defaults
+    ranges = {**SPEND_RANGES, **(spend_ranges_override or {})}
+    frequencies = {**SPEND_FREQUENCIES, **(spend_frequencies_override or {})}
 
     balance = Decimal("2500.00")
     txn_counter = 0
@@ -156,10 +165,10 @@ def generate_customer(
         txn_counter += 1
 
         # Spending transactions
-        for category, freq in SPEND_FREQUENCIES.items():
-            if category == "salary":
+        for category, freq in frequencies.items():
+            if category in ("salary", "savings_transfer"):
                 continue
-            lo, hi = SPEND_RANGES[category]
+            lo, hi = ranges[category]
             for _ in range(freq):
                 amount = Decimal(str(round(random.uniform(lo, hi), 2)))
                 txn_date = _random_date_in_month(year, month)
@@ -177,6 +186,170 @@ def generate_customer(
                 txn_counter += 1
 
     # Sort chronologically
+    profile.transactions.sort(key=lambda t: t.date)
+    return profile
+
+
+# ---------------------------------------------------------------------------
+# Multi-persona demo profiles (FE-9)
+# ---------------------------------------------------------------------------
+
+def get_persona_spontaneous_spender() -> CustomerProfile:
+    """
+    Jordan Lee — Spontaneous Spender (CUST_DEMO_003)
+    High discretionary spend: frequent eating out, impulse shopping, entertainment.
+    Minimal savings. Financial health score ~30-40.
+    """
+    return generate_customer(
+        customer_id="CUST_DEMO_003",
+        name="Jordan Lee",
+        monthly_salary=3800.0,
+        months=12,
+        seed=123,
+        spend_ranges_override={
+            "eating_out":       (30.0,  95.0),
+            "shopping":         (80.0, 380.0),
+            "entertainment":    (35.0, 130.0),
+            "cash_withdrawal":  (60.0, 200.0),
+            "subscriptions":    (9.99,  24.99),
+        },
+        spend_frequencies_override={
+            "eating_out":       9,
+            "shopping":         6,
+            "entertainment":    5,
+            "cash_withdrawal":  3,
+            "subscriptions":    7,
+        },
+    )
+
+
+def get_persona_cautious_planner() -> CustomerProfile:
+    """
+    Sam Carter — Cautious Planner (CUST_DEMO_004)
+    High earner, disciplined spending, large monthly savings transfers.
+    Financial health score ~75-85.
+    """
+    profile = generate_customer(
+        customer_id="CUST_DEMO_004",
+        name="Sam Carter",
+        monthly_salary=5200.0,
+        months=12,
+        seed=456,
+        spend_ranges_override={
+            "eating_out":       (5.0,   18.0),
+            "shopping":         (10.0,  55.0),
+            "entertainment":    (5.0,   25.0),
+            "cash_withdrawal":  (20.0,  50.0),
+        },
+        spend_frequencies_override={
+            "eating_out":       2,
+            "shopping":         2,
+            "entertainment":    1,
+            "cash_withdrawal":  1,
+        },
+    )
+    # Inject monthly savings transfers (£1,500/month) — the defining trait
+    today = date.today()
+    balance = profile.transactions[-1].balance_after
+    txn_counter = 8000
+    start_month = today.month - 12
+    start_year = today.year
+    while start_month <= 0:
+        start_month += 12
+        start_year -= 1
+    for m_offset in range(12):
+        month = (start_month + m_offset - 1) % 12 + 1
+        year = start_year + (start_month + m_offset - 1) // 12
+        try:
+            txn_date = date(year, month, 27)
+        except ValueError:
+            txn_date = date(year, month, 28)
+        amount = Decimal("1500.00")
+        balance -= amount
+        profile.transactions.append(Transaction(
+            transaction_id=f"TXN_{txn_counter:05d}",
+            date=txn_date,
+            amount=-amount,
+            merchant="Transfer to ISA Savings",
+            category="savings_transfer",
+            channel="bacs",
+            balance_after=balance,
+        ))
+        txn_counter += 1
+    profile.transactions.sort(key=lambda t: t.date)
+    return profile
+
+
+def get_persona_reactive_manager() -> CustomerProfile:
+    """
+    Morgan Davies — Reactive Manager (CUST_DEMO_005)
+    Lower income, high and unpredictable outgoings, lives paycheck to paycheck.
+    No savings. Financial health score ~20-30.
+    """
+    return generate_customer(
+        customer_id="CUST_DEMO_005",
+        name="Morgan Davies",
+        monthly_salary=2800.0,
+        months=12,
+        seed=789,
+        spend_ranges_override={
+            "groceries":        (90.0,  230.0),
+            "transport":        (30.0,  190.0),
+            "utilities":        (70.0,  190.0),
+            "other":            (30.0,  100.0),
+            "cash_withdrawal":  (50.0,  150.0),
+        },
+        spend_frequencies_override={
+            "groceries":        7,
+            "transport":        7,
+            "utilities":        4,
+            "other":            3,
+            "cash_withdrawal":  3,
+        },
+    )
+
+
+def get_persona_balanced_achiever() -> CustomerProfile:
+    """
+    Jamie Williams — Balanced Achiever (CUST_DEMO_006)
+    Good salary, balanced spending across all categories, modest regular savings.
+    Financial health score ~60-70.
+    """
+    profile = generate_customer(
+        customer_id="CUST_DEMO_006",
+        name="Jamie Williams",
+        monthly_salary=4500.0,
+        months=12,
+        seed=999,
+    )
+    # Inject modest monthly savings transfers (£600/month)
+    today = date.today()
+    balance = profile.transactions[-1].balance_after
+    txn_counter = 8500
+    start_month = today.month - 12
+    start_year = today.year
+    while start_month <= 0:
+        start_month += 12
+        start_year -= 1
+    for m_offset in range(12):
+        month = (start_month + m_offset - 1) % 12 + 1
+        year = start_year + (start_month + m_offset - 1) // 12
+        try:
+            txn_date = date(year, month, 27)
+        except ValueError:
+            txn_date = date(year, month, 28)
+        amount = Decimal("600.00")
+        balance -= amount
+        profile.transactions.append(Transaction(
+            transaction_id=f"TXN_{txn_counter:05d}",
+            date=txn_date,
+            amount=-amount,
+            merchant="Transfer to Savings",
+            category="savings_transfer",
+            channel="bacs",
+            balance_after=balance,
+        ))
+        txn_counter += 1
     profile.transactions.sort(key=lambda t: t.date)
     return profile
 

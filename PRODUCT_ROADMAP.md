@@ -3,13 +3,67 @@
 > **Product:** AI Financial Wellbeing Platform
 > **Owner:** LBG Digital & AI
 > **Horizon:** 24 months
-> **Last updated:** Q1 2026
+> **Last updated:** February 2026
+> **Version:** 2.0 — Updated with Phase 1 delivery status, RICE-scored backlog, and Emotional Connect / Business Activation epics
 
 ---
 
 ## Vision
 
 > *Every LBG customer has access to a trusted, always-on AI financial companion that understands their life, coaches their money habits, and acts on their behalf — deepening the relationship that 26 million customers already have with Lloyds, Halifax and Bank of Scotland.*
+
+---
+
+## Build Status — February 2026
+
+### Phase 1 MVP: Delivered ✅
+
+| Epic | Feature | Status |
+|------|---------|--------|
+| 1.1 Spending Intelligence | Monthly spend breakdown by category | ✅ Done |
+| 1.1 Spending Intelligence | Top merchant analysis | ✅ Done |
+| 1.1 Spending Intelligence | Income vs spend summary with surplus/deficit | ✅ Done |
+| 1.1 Spending Intelligence | Savings opportunity identifier | ✅ Done |
+| 1.1 Spending Intelligence | Inline Chart.js visualisations (donut, radar, line) | ✅ Done |
+| 1.2 Health Score | 5-pillar financial health score (0–100) | ✅ Done |
+| 1.2 Health Score | Score history tracking | ✅ Done |
+| 1.2 Health Score | Support signpost for score < 40 (Consumer Duty) | ✅ Done |
+| 1.3 Conversational Q&A | Natural language spend queries | ✅ Done |
+| 1.3 Conversational Q&A | Financial literacy RAG Q&A | ✅ Done |
+| 1.3 Conversational Q&A | FCA input guardrails (regulated advice, OOS, distress) | ✅ Done |
+| 1.3 Conversational Q&A | Output guard — anti-hallucination (£ grounding) | ✅ Done |
+| 1.3 Conversational Q&A | FCA disclaimer auto-injection | ✅ Done |
+| 1.3 Conversational Q&A | AI identity disclosure (Consumer Duty) | ✅ Done |
+| 1.3 Conversational Q&A | GDPR consent gate | ✅ Done |
+| 1.4 Platform | Deterministic tools + narrating-LLM architecture | ✅ Done |
+| 1.4 Platform | Session memory (10-turn window) | ✅ Done |
+| 1.4 Platform | Cross-session customer memory (JSON persistence) | ✅ Done |
+| 2.1 Decision Support | Mortgage affordability modeller (PRA 4.5× LTI + stress test) | ✅ Done |
+| 2.1 Decision Support | Debt vs savings optimiser | ✅ Done |
+| 2.1 Decision Support | Budget planner (50/30/20) | ✅ Done |
+| 2.1 Decision Support | Life event detection (basic) | ✅ Done |
+| 2.1 Decision Support | Warm adviser handoff | ✅ Done |
+| 2.4 Memory | Goal tracking with deduplication | ✅ Done |
+| 2.4 Memory | Preference learning (tone, topics) | ✅ Done |
+| 2.4 Memory | Context continuity across sessions | ✅ Done |
+| Quality | 291-test pytest suite (guardrails, tools, memory, API, charts) | ✅ Done |
+| Quality | 6 custom Claude Code agents (Security, FCA, Guardrails, Tests, Hallucination, Reporter) | ✅ Done |
+| Compliance | Distress signposting (MoneyHelper, StepChange, National Debtline) | ✅ Done |
+| Compliance | Regulated advice redirect (10 patterns including which/pick/best) | ✅ Done |
+| Compliance | Complaints FOS signposting | ✅ Done |
+
+### Phase 1 Exit Gates — Status
+
+| Gate | Status |
+|------|--------|
+| Zero hallucination incidents in UAT | ✅ Output guard live + tested |
+| FCA guidance vs advice boundary enforced | ✅ 10 regulated advice patterns + output guard |
+| Anti-hallucination framework | ✅ Deterministic tools → grounded amounts → output guard |
+| Security pen test | 🟡 Security Review agent created; awaiting formal pen test |
+| GDPR consent mechanism | ✅ Consent modal + localStorage gate live |
+| Consumer Duty — vulnerable customer support | ✅ Distress patterns + signposting live |
+| AI identity disclosure | ✅ AI disclosure in welcome message |
+| Self-service containment lift | 🟡 Measuring post-launch |
 
 ---
 
@@ -33,6 +87,41 @@
 | Depth of relationship (products/customer) | 2.1 | 2.2 | 2.4 | 2.7 | 3.1 |
 | Monthly active users (agent) | 0 | 500K | 2M | 5M | 12M |
 | Proactive engagement open rate | — | — | 35% | 42% | 50% |
+
+---
+
+## Immediate Priority Backlog — RICE Scored
+
+> **RICE = (Reach × Impact × Confidence) / Effort**
+> Reach: % of customers affected (1–10). Impact: value per customer (1–10). Confidence: certainty of estimate (%). Effort: person-weeks.
+
+| # | Feature | Epic | Reach | Impact | Conf% | Effort (wks) | RICE | Phase |
+|---|---------|------|-------|--------|-------|-------------|------|-------|
+| 1 | **Money Personality Types** (6 types + shift narrative) | FE-7 | 10 | 9 | 75% | 2 | **338** | Now |
+| 2 | **Savings Win Celebrations** (gamified milestones) | FE-7 | 8 | 9 | 85% | 1 | **306** | Now |
+| 3 | **Context-Aware Product Recommendations** | FE-8 | 9 | 10 | 80% | 4 | **180** | Phase 2 |
+| 4 | **Emotional Financial Timeline** (6-month story) | FE-7 | 10 | 8 | 70% | 3 | **187** | Now |
+| 5 | **Multi-Persona Demo Environment** (6 personas) | FE-9 | 2 | 10 | 95% | 1 | **190** | Now |
+| 6 | **Payday Optimiser** (salary-day sweep nudge) | Epic 2.2 | 9 | 8 | 85% | 2 | **306** | Phase 2 |
+| 7 | **Subscription Audit** (identify unused subs) | Epic 2.2 | 8 | 7 | 85% | 1 | **238** | Phase 2 |
+| 8 | **Bill Spike Alert** (DD increased notification) | Epic 2.2 | 9 | 7 | 80% | 1 | **252** | Phase 2 |
+| 9 | **Goal Savings Planner + ISA bridge** | FE-8 | 8 | 9 | 75% | 3 | **180** | Phase 2 |
+| 10 | **Mortgage Readiness Score** | FE-8 | 6 | 10 | 70% | 3 | **140** | Phase 2 |
+| 11 | **Runway Alert** (pre-payday shortfall warning) | Epic 2.2 | 8 | 8 | 80% | 1 | **256** | Phase 2 |
+| 12 | **In-app push notifications** (iOS/Android) | Epic 2.3 | 10 | 7 | 75% | 4 | **131** | Phase 2 |
+| 13 | **FE-5 create_agent migration** | FE-5 | 1 | 6 | 90% | 4 | **14** | Phase 2 |
+| 14 | **Weekly email digest** | Epic 2.3 | 7 | 6 | 80% | 2 | **168** | Phase 2 |
+| 15 | **WhatsApp channel pilot** | Epic 2.3 | 6 | 8 | 60% | 6 | **48** | Phase 3 |
+
+### Sprint 0 (Now — Pre-Demo) — Top 5 by RICE
+
+```
+Priority 1  Money Personality Types         RICE 338  — Identity hook, demo wow factor
+Priority 2  Savings Win Celebrations        RICE 306  — Easy ship, peak-emotion conversion
+Priority 3  Multi-Persona Demo Environment  RICE 190  — Unlocks client demo differentiation
+Priority 4  Emotional Financial Timeline    RICE 187  — Demo centrepiece, shareable moment
+Priority 5  Context-Aware Product Recs      RICE 180  — First direct revenue conversion
+```
 
 ---
 
@@ -600,4 +689,132 @@ OrchestratorAgent (thin router — classifies intent, dispatches, synthesises)
 
 ---
 
-*Document version: 1.3 · AI Sage Financial Wellbeing Platform · Confidential*
+---
+
+### FE-7 — Emotional Connect & Financial Personality Engine
+
+> *Identified during: product strategy session — "customers connect with stories, not numbers"*
+
+The single highest-impact demo and retention differentiator. Customers form an emotional identity around their financial type and track their progression — making AI Sage feel personal rather than transactional. Personality profiling also serves as the personalisation engine for coaching tone and product recommendations.
+
+#### FE-7.1 — Money Personality Types
+
+| Feature | Description | RICE | Priority |
+|---------|-------------|------|----------|
+| **6 personality types** | Derived deterministically from transaction patterns: Steady Saver, Spontaneous Spender, Goal Crusher, Cautious Planner, Reactive Manager, Balanced Achiever | 338 | P0 |
+| **Personality shift narrative** | "3 months ago you were a Spontaneous Spender. You're becoming a Balanced Achiever." — progress framing, not just labelling | 338 | P0 |
+| **Type-to-product bridge** | Each type maps to a natural next product: Steady Saver → ISA, Goal Crusher → Mortgage readiness, Cautious Planner → investment nudge | 180 | P1 |
+| **Adaptive coaching tone** | AI Sage adjusts language depth and framing based on personality type — Cautious Planner gets data-heavy responses; Spontaneous Spender gets empathetic and action-focused | 150 | P1 |
+| **Monthly personality pulse** | "This month you showed up as a Goal Crusher — your best month yet" — repeat engagement trigger | 120 | P2 |
+
+**Personality type logic (deterministic, not LLM):**
+
+| Type | Savings Rate | Spend Stability | Goal Progress | Primary Signal |
+|------|-------------|----------------|---------------|----------------|
+| Steady Saver | > 20% | High | Moderate | Consistent saving, few goals set |
+| Spontaneous Spender | < 5% | Low | Low | High discretionary variance |
+| Goal Crusher | > 15% | Medium | High | Active goals, high completion rate |
+| Cautious Planner | > 30% | Very High | Low | Over-saves, no investment signals |
+| Reactive Manager | Variable | Very Low | Low | Crisis spending patterns, irregular income |
+| Balanced Achiever | 15–25% | High | High | Healthy across all 5 health pillars |
+
+**FCA note:** Language must be aspirational, never judgmental. "Spontaneous Spender" framed as "you live in the moment." Suppress personality feature if distress patterns detected in session.
+
+#### FE-7.2 — Emotional Financial Timeline
+
+| Feature | Description | RICE | Priority |
+|---------|-------------|------|----------|
+| **6-month financial story** | Interactive timeline showing key financial moments — pay rise, new rent, first savings goal hit, best spending month | 187 | P0 |
+| **AI-generated chapter titles** | "The month you got your pay rise", "The tough November" — narrative framing for each month | 187 | P0 |
+| **Life event auto-detection** | Nursery payments, rent changes, salary change, large one-off purchases — auto-marked on timeline with opt-in confirmation ("It looks like your rent changed — want me to mark that?") | 160 | P1 |
+| **Before/after comparison** | "6 months ago vs today" — side-by-side health score, savings rate, spending split | 150 | P1 |
+| **Milestone markers** | "First month you saved over £500", "Your best spending month" — gamified annotation | 140 | P1 |
+| **Zoomable chart with AI annotations** | Chart.js timeline with clickable annotations that open an AI Sage explanation of what happened | 120 | P2 |
+
+**Why the timeline matters for the bank:** Shareable "financial glow-up" moments drive organic acquisition. It also reinforces switching cost — a 6-month financial story is locked to LBG; customers won't start again elsewhere.
+
+#### FE-7.3 — Savings Win Celebrations
+
+| Feature | Description | RICE | Priority |
+|---------|-------------|------|----------|
+| **Full-screen celebration moment** | Confetti + large number + shareable card when savings milestone hit — not a toast notification, a moment | 306 | P0 |
+| **Milestone thresholds** | First £100 saved, first £500, first £1,000, goal completion, 3-month emergency fund reached | 306 | P0 |
+| **Peak-emotion product prompt** | Celebration → immediate "Put it to work in a Lloyds Cash ISA earning X%" — conversion at highest trust moment | 240 | P0 |
+| **Shareable achievement card** | "I hit my savings goal with AI Sage" — branded card for social sharing | 120 | P2 |
+
+---
+
+### FE-8 — Context-Aware Business Activation
+
+> *Identified during: product strategy session — "features that improve user financial health automatically create bank revenue opportunities"*
+
+The principle: **never recommend a product unless a signal has appeared first.** Context-aware means the recommendation feels like help, not sales. Every feature here is triggered by a real customer event, not a scheduled push.
+
+#### FE-8.1 — Proactive Financial Intelligence
+
+| Feature | Description | RICE | Priority |
+|---------|-------------|------|----------|
+| **Payday Optimiser** | "Your salary landed — move £300 to savings, pay £150 off your card?" — automated sweep suggestion on salary day | 306 | P0 |
+| **Runway Alert** | "Based on your spending you'll run short 4 days before payday" — proactive, not reactive | 256 | P0 |
+| **Bill Spike Alert** | "Your energy DD increased £40 this month — here's the cashflow impact" | 252 | P0 |
+| **Subscription Audit** | "You have 7 subscriptions costing £94/mo — 3 appear unused" | 238 | P0 |
+
+#### FE-8.2 — Goal-to-Product Bridge (Revenue Engine)
+
+| Trigger Signal | AI Sage Action | Bank Product | RICE |
+|---------------|---------------|-------------|------|
+| Savings goal set | "To reach £10k by December, save £556/mo — want to open a dedicated savings pot?" | Linked savings account / Cash ISA | 180 |
+| End-of-month surplus ≥ 3 months running | "You've had a surplus 3 months in a row — your money could be working harder" | ISA, Fixed Rate Saver | 165 |
+| Mortgage readiness score ≥ 80% | "You're mortgage-ready — want to speak to an adviser?" | Mortgage appointment | 140 |
+| Life event: baby/nursery payments detected | "Your outgoings changed — shall I recalculate your budget and look at life cover?" | Life insurance, children's savings | 130 |
+| Life event: salary increase detected | "Your income increased £600/mo — here's how to put that to work" | ISA, pension top-up, overpay mortgage | 125 |
+| Debt freedom date set | "You'll be debt-free by March 2027 — want to plan what comes next?" | Investment / ISA conversation | 110 |
+
+**Rule:** Every recommendation must include the FCA caveat. No specific product names or rates unless pulled from a live, auditable product API. Phrase as "you appear to meet the indicative criteria for" not "you qualify for."
+
+#### FE-8.3 — Mortgage Readiness Score
+
+| Feature | Description | RICE | Priority |
+|---------|-------------|------|----------|
+| **Readiness score (0–100%)** | Composite of deposit progress, income stability, debt-to-income, credit behaviour | 140 | P1 |
+| **Gap analysis** | "Fix these 2 things to improve your score" — actionable, not just informational | 140 | P1 |
+| **6-month trajectory** | "At your current savings rate you'll be mortgage-ready in 8 months" | 120 | P1 |
+| **Warm adviser handoff** | Score ≥ 80% → one-tap adviser appointment with full context pre-loaded | 140 | P0 |
+
+---
+
+### FE-9 — Multi-Persona Demo Environment
+
+> *Identified during: client demo preparation — "a demo locked to one customer profile limits stakeholder engagement"*
+
+Six distinct demo personas mapped to the six money personality types. The presenter can select a persona from a login dropdown, demonstrating AI Sage's personalisation depth to different audience segments in real time. Each persona has its own transaction history, financial health score, goals, and personality type — creating genuinely different AI Sage conversations.
+
+#### Personas
+
+| ID | Name | Type | Story | Demo use case |
+|----|------|------|-------|---------------|
+| CUST_DEMO_001 | Alex Johnson | Steady Saver | Existing profile — baseline, simple | Onboarding, first-time user journey |
+| CUST_DEMO_002 | Alex Johnson | Goal Crusher | Life events: baby, pay rise, house | Life event detection, goal tracking |
+| CUST_DEMO_003 | Jordan Lee | Spontaneous Spender | £3,800 salary, high discretionary, no savings | Subscription audit, budget coaching |
+| CUST_DEMO_004 | Sam Carter | Cautious Planner | £5,200 salary, over-saves, never invested | ISA/investment nudge, health score |
+| CUST_DEMO_005 | Morgan Davies | Reactive Manager | £2,800 salary, some debt, irregular | Debt optimiser, distress guardrail |
+| CUST_DEMO_006 | Jamie Williams | Balanced Achiever | £4,500 salary, all pillars healthy | Aspirational "after" state, product bridge |
+
+#### Features
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| **Persona login page** | `login.html` with styled dropdown showing name + personality type + brief description | P0 |
+| **Universal demo password** | Single password (`LBG@2026`) for all personas — prevents fumbling in live demos | P0 |
+| **Dynamic dashboard header** | Name, avatar initials, personality type badge update based on selected persona | P0 |
+| **Per-persona transaction data** | Different salary, spending patterns, life events, health scores — genuinely different AI conversations | P0 |
+| **Pre-seeded customer store** | Each persona has pre-built goals, session history, preferences — returning-user experience from first run | P0 |
+| **Personality type badge in UI** | Visible in nav bar and financial overview — reinforces FE-7 personality concept | P1 |
+
+**Presenter note:** CUST_DEMO_005 (Morgan Davies, Reactive Manager) demonstrates Consumer Duty / distress guardrail features. Use selectively — powerful for a compliance/FCA audience, may feel heavy for a commercial audience. Know your room.
+
+**Effort:** ~3–4 days total (backend routing + 4 transaction generators + 4 JSON stores + login.html + chat_panel.js update)
+
+---
+
+*Document version: 2.0 · AI Sage Financial Wellbeing Platform · Confidential*

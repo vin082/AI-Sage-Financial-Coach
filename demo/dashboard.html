@@ -55,10 +55,10 @@
 
     <div class="nav-right">
       <div class="nav-user">
-        <div class="nav-avatar">AJ</div>
-        <span>Alex Johnson</span>
+        <div class="nav-avatar" id="nav-avatar">AJ</div>
+        <span id="nav-name">Alex Johnson</span>
       </div>
-      <a href="login.html" class="nav-logout">Log out</a>
+      <a href="login.html" class="nav-logout" onclick="sessionStorage.removeItem('ai_sage_persona')">Log out</a>
     </div>
   </nav>
 
@@ -68,8 +68,8 @@
     <!-- Welcome banner -->
     <div class="welcome-banner">
       <div>
-        <h1>Good morning, Alex 👋</h1>
-        <p>Here's a snapshot of your finances. Last login: Today, 08:42</p>
+        <h1 id="welcome-heading">Good morning, Alex 👋</h1>
+        <p id="welcome-sub">Here's a snapshot of your finances. Last login: Today, 08:42</p>
       </div>
       <div class="welcome-badge">🔒 Secure session active</div>
     </div>
@@ -509,6 +509,41 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    // ---- Persona init: read from sessionStorage set by login.html ----
+    (function () {
+      let persona = null;
+      try { persona = JSON.parse(sessionStorage.getItem('ai_sage_persona')); } catch {}
+
+      // Redirect to login if no persona found (direct URL access without logging in)
+      if (!persona) {
+        window.location.replace('login.html');
+        return;
+      }
+
+      // Update nav avatar + name
+      const avatarEl = document.getElementById('nav-avatar');
+      const nameEl   = document.getElementById('nav-name');
+      if (avatarEl) {
+        avatarEl.textContent = persona.initials || 'AJ';
+        if (persona.color) avatarEl.style.background = persona.color;
+      }
+      if (nameEl) nameEl.textContent = persona.name || 'Alex Johnson';
+
+      // Update welcome heading with first name + time-of-day greeting
+      const firstName = (persona.name || 'Alex').split(' ')[0];
+      const hour = new Date().getHours();
+      const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+      const headingEl = document.getElementById('welcome-heading');
+      if (headingEl) headingEl.textContent = `${greeting}, ${firstName} \uD83D\uDC4B`;
+
+      // Update sub-heading with personality type badge
+      const subEl = document.getElementById('welcome-sub');
+      if (subEl) {
+        subEl.innerHTML = `${persona.emoji || ''} <strong>${persona.type || ''}</strong> &nbsp;&middot;&nbsp; ${persona.salary || ''} &nbsp;&middot;&nbsp; Here's a snapshot of your finances.`;
+      }
+    })();
+  </script>
   <script src="chat_panel.js"></script>
 </body>
 </html>

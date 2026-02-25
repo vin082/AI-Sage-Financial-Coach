@@ -14,7 +14,12 @@
 // ---- Configuration ----
 const API_BASE   = 'http://localhost:8000';   // FastAPI backend
 const DEMO_TOKEN = 'demo-token-alex';          // Matches api/main.py bearer stub
-const CUSTOMER_ID = 'CUST_DEMO_002';           // Life Events demo profile
+
+// Resolve customer ID from login session; fall back to CUST_DEMO_001 if opened directly
+const _loginPersona = (() => {
+  try { return JSON.parse(sessionStorage.getItem('ai_sage_persona')); } catch { return null; }
+})();
+const CUSTOMER_ID = (_loginPersona && _loginPersona.customer_id) || 'CUST_DEMO_001';
 
 // ---- State ----
 let sessionId    = null;
